@@ -2,9 +2,9 @@ package com.example.fitsync.ui.screens.log
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fitsync.data.local.entity.WorkoutEntity
 import com.example.fitsync.data.repository.WorkoutRepository
 import com.example.fitsync.domain.model.Exercise
+import com.example.fitsync.domain.model.WorkoutSession
 import com.example.fitsync.domain.model.WorkoutSet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,23 +30,21 @@ class DailyLogViewModel @Inject constructor(
     val userId: StateFlow<String> = _userId.asStateFlow()
 
     init {
-        // Generating a unique ID. Ideally, this should be saved to DataStore later.
+        // Generating a unique ID for cloud syncing.
         _userId.value = "FIT-" + UUID.randomUUID().toString().take(8).uppercase()
         loadTodayWorkout()
     }
 
     /**
-     * Point 2: Optimized Save logic.
-     * Instead of just inserting, we want the repository to know it should
-     * eventually update the full "Journal" bin on JSONbin.
+     * Save the current session to Room and Cloud.
      */
     fun saveWorkout() {
         viewModelScope.launch {
-            // Only save if there are actual exercises logged
             if (_uiState.value.exercises.isNotEmpty()) {
-                val workout = WorkoutEntity(
+                val workout = WorkoutSession(
+                    id = 0, // 🔥 Room uses 0 as a signal to auto-generate a new Long ID
                     date = System.currentTimeMillis(),
-                    exerciseList = _uiState.value.exercises,
+                    exercise = _uiState.value.exercises,
                     isSynced = false
                 )
                 repository.insert(workout, _userId.value)
@@ -56,13 +54,9 @@ class DailyLogViewModel @Inject constructor(
 
     private fun loadTodayWorkout() {
         val today = SimpleDateFormat("EEEE, MMM d", Locale.getDefault()).format(Date())
-        // Start with an empty list for a cleaner "Current Session" look
         _uiState.update { it.copy(date = today, exercises = emptyList()) }
     }
 
-    /**
-     * Point 4: Delete the entire Exercise Card
-     */
     fun removeExercise(exerciseName: String) {
         _uiState.update { currentState ->
             val updatedList = currentState.exercises.filter { it.name != exerciseName }
@@ -72,12 +66,12 @@ class DailyLogViewModel @Inject constructor(
 
     fun addExercise(exerciseName: String) {
         _uiState.update { currentState ->
-            // Prevent adding the same exercise twice in one session
             if (currentState.exercises.any { it.name == exerciseName }) return@update currentState
 
             val newExercise = Exercise(
                 name = exerciseName,
-                sets = listOf(WorkoutSet(setNumber = 1, weight = 0f, reps = 0, isCompleted = false))
+                // Match WorkoutSet params: (reps: Int, setNumber: Int, weight: Float, isCompleted: Boolean)
+                sets = listOf(WorkoutSet(reps = 0, setNumber = 1, weight = 0f, isCompleted = false))
             )
             currentState.copy(exercises = currentState.exercises + newExercise)
         }
@@ -88,8 +82,8 @@ class DailyLogViewModel @Inject constructor(
             val updatedExercises = currentState.exercises.map { exercise ->
                 if (exercise.name == exerciseName) {
                     val nextSetNumber = exercise.sets.size + 1
-                    // FIX: Ensure parameters match WorkoutSet(Int, Float, Int, Boolean)
-                    exercise.copy(sets = exercise.sets + WorkoutSet(nextSetNumber, 0, 0f, false))
+                    // Match WorkoutSet params: (reps, setNumber, weight, isCompleted)
+                    exercise.copy(sets = exercise.sets + WorkoutSet(0, nextSetNumber, 0f, false))
                 } else exercise
             }
             currentState.copy(exercises = updatedExercises)

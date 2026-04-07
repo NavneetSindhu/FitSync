@@ -1,6 +1,6 @@
 package com.example.fitsync.data.remote
 
-import com.example.fitsync.data.local.entity.WorkoutEntity
+import com.example.fitsync.domain.model.WorkoutSession
 import io.ktor.client.*
 import io.ktor.client.call.body
 import io.ktor.client.request.*
@@ -20,7 +20,7 @@ data class BinMetadata(val id: String)
 @Serializable
 data class SyncPayload(
     val lastUpdated: Long,
-    val workouts: List<WorkoutEntity>
+    val workouts: List<WorkoutSession>
 )
 
 @Singleton
@@ -32,7 +32,7 @@ class ApiService @Inject constructor(private val client: HttpClient) {
     /**
      * 1. CREATE: Use this once to get a random hex ID from JSONBin.
      */
-    suspend fun createJournal(allWorkouts: List<WorkoutEntity>): String? {
+    suspend fun createJournal(allWorkouts: List<WorkoutSession>): String? {
         return try {
             val response: HttpResponse = client.post(BASE_URL) {
                 header("X-Master-Key", MASTER_KEY)
@@ -57,7 +57,7 @@ class ApiService @Inject constructor(private val client: HttpClient) {
     /**
      * 2. UPDATE: Use this for all future syncs using the generated Hex ID.
      */
-    suspend fun updateJournal(binId: String, allWorkouts: List<WorkoutEntity>): Boolean {
+    suspend fun updateJournal(binId: String, allWorkouts: List<WorkoutSession>): Boolean {
         if (binId.isBlank()) return false
         return try {
             val response: HttpResponse = client.put("$BASE_URL/$binId") {

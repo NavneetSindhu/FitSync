@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.fitsync.data.local.entity.WorkoutEntity
+import com.example.fitsync.domain.model.WorkoutSession
 import com.example.fitsync.ui.components.HistoryWorkoutCard
 import com.example.fitsync.ui.theme.*
 import java.text.SimpleDateFormat
@@ -32,33 +33,37 @@ fun HistoryScreen(
     onBackClick: () -> Unit,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
-    val workouts by viewModel.workoutHistory.collectAsState()
+    val workouts by viewModel.workoutHistory.collectAsState(initial = emptyList())
 
     var selectedMonth by remember { mutableStateOf("All") }
     var selectedExercise by remember { mutableStateOf("All") }
 
     val monthFormatter = remember { SimpleDateFormat("MMMM", Locale.getDefault()) }
 
+    // --- REFACTORED DATA LOGIC ---
     val availableMonths = remember(workouts) {
         listOf("All") + workouts.map { monthFormatter.format(Date(it.date)) }.distinct()
     }
+
     val availableExercises = remember(workouts) {
-        listOf("All") + workouts.flatMap { it.exerciseList.map { ex -> ex.name } }.distinct()
+        // Updated to use .exercise (singular) from your new model
+        listOf("All") + workouts.flatMap { it.exercise.map { ex -> ex.name } }.distinct()
     }
 
     val filteredWorkouts = remember(workouts, selectedMonth, selectedExercise) {
         workouts.filter { workout ->
             val workoutMonth = monthFormatter.format(Date(workout.date))
             val monthMatch = selectedMonth == "All" || workoutMonth == selectedMonth
-            val exerciseMatch = selectedExercise == "All" || workout.exerciseList.any { it.name == selectedExercise }
+            // Updated to use .exercise (singular)
+            val exerciseMatch = selectedExercise == "All" || workout.exercise.any { it.name == selectedExercise }
             monthMatch && exerciseMatch
         }
     }
 
     val totalVolume = remember(filteredWorkouts) {
         filteredWorkouts.sumOf { workout ->
-            workout.exerciseList.sumOf { exercise ->
-                exercise.sets.sumOf { (it.weight * it.reps).toDouble() }
+            workout.exercise.sumOf { ex ->
+                ex.sets.sumOf { (it.weight * it.reps).toDouble() }
             }
         }.toInt()
     }
@@ -66,24 +71,14 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                modifier = Modifier.statusBarsPadding(),
                 title = {
-                    Text(
-                        "Workout History",
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Workout History", fontWeight = FontWeight.ExtraBold)
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
-                windowInsets = WindowInsets(0, 0, 0, 0),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -91,7 +86,7 @@ fun HistoryScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(modifier = Modifier.padding(top = padding.calculateTopPadding())) {
+        Column(modifier = Modifier.padding(padding)) {
 
             // --- FILTER CHIPS ---
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
@@ -111,14 +106,15 @@ fun HistoryScreen(
                         HistorySummaryHeader(filteredWorkouts.size, totalVolume)
                     }
 
-                    items(items = filteredWorkouts, key = { it.id }) { workout ->
-                        Box(modifier = Modifier.animateItem()) {
-                            SwipeToDeleteContainer(
-                                item = workout,
-                                onDelete = { viewModel.deleteWorkout(it) }
-                            ) {
-                                HistoryWorkoutCard(workout = workout)
-                            }
+                    items(
+                        items = filteredWorkouts,
+                        key = { it.id } // Now uses your Long ID
+                    ) { workout ->
+                        SwipeToDeleteContainer(
+                            item = workout,
+                            onDelete = { viewModel.deleteWorkout(it) }
+                        ) {
+                            HistoryWorkoutCard(workout = workout)
                         }
                     }
                 }
@@ -127,41 +123,12 @@ fun HistoryScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FilterChipRow(items: List<String>, selectedItem: String, onSelected: (String) -> Unit) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        modifier = Modifier.padding(vertical = 4.dp)
-    ) {
-        items(items) { item ->
-            FilterChip(
-                selected = selectedItem == item,
-                onClick = { onSelected(item) },
-                label = { Text(item, fontSize = 12.sp) },
-                shape = RoundedCornerShape(12.dp),
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = selectedItem == item,
-                    borderColor = Color.Transparent,
-                    selectedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    }
-}
+// --- Support Components ---
 
 @Composable
 fun HistorySummaryHeader(count: Int, volume: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        // Keep the brand color for the header background
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -171,30 +138,12 @@ fun HistorySummaryHeader(count: Int, volume: Int) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text(
-                    "Total Volume",
-                    color = MaterialTheme.colorScheme.onPrimary.copy(0.7f),
-                    fontSize = 11.sp
-                )
-                Text(
-                    "${"%,d".format(volume)} kg",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Total Volume", color = Color.White.copy(0.7f), fontSize = 11.sp)
+                Text("${"%,d".format(volume)} kg", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    "Sessions",
-                    color = MaterialTheme.colorScheme.onPrimary.copy(0.7f),
-                    fontSize = 11.sp
-                )
-                Text(
-                    "$count",
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Sessions", color = Color.White.copy(0.7f), fontSize = 11.sp)
+                Text("$count", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -202,7 +151,11 @@ fun HistorySummaryHeader(count: Int, volume: Int) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SwipeToDeleteContainer(item: WorkoutEntity, onDelete: (WorkoutEntity) -> Unit, content: @Composable () -> Unit) {
+fun SwipeToDeleteContainer(
+    item: WorkoutSession,
+    onDelete: (WorkoutSession) -> Unit,
+    content: @Composable () -> Unit
+) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             if (it == SwipeToDismissBoxValue.EndToStart) {
@@ -216,12 +169,12 @@ fun SwipeToDeleteContainer(item: WorkoutEntity, onDelete: (WorkoutEntity) -> Uni
         enableDismissFromStartToEnd = false,
         backgroundContent = {
             val color = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
-                MaterialTheme.colorScheme.error.copy(0.8f) else Color.Transparent
+                MaterialTheme.colorScheme.error else Color.Transparent
             Box(
                 Modifier
                     .fillMaxSize()
                     .padding(vertical = 4.dp)
-                    .background(color, RoundedCornerShape(12.dp)),
+                    .background(color, RoundedCornerShape(16.dp)),
                 Alignment.CenterEnd
             ) {
                 Icon(
@@ -237,6 +190,24 @@ fun SwipeToDeleteContainer(item: WorkoutEntity, onDelete: (WorkoutEntity) -> Uni
 }
 
 @Composable
+fun FilterChipRow(items: List<String>, selectedItem: String, onSelected: (String) -> Unit) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        items(items) { item ->
+            FilterChip(
+                selected = selectedItem == item,
+                onClick = { onSelected(item) },
+                label = { Text(item, fontSize = 12.sp) },
+                shape = CircleShape
+            )
+        }
+    }
+}
+
+@Composable
 fun EmptyHistoryState(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize(), Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -246,10 +217,7 @@ fun EmptyHistoryState(modifier: Modifier = Modifier) {
                 Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.3f)
             )
-            Text(
-                "No workouts found.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text("No workouts found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
