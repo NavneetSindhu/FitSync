@@ -6,11 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.fitsync.data.local.dao.WorkoutDao
-import com.example.fitsync.data.local.entity.WorkoutEntity
-import com.example.fitsync.data.local.Converters
+import com.example.fitsync.domain.model.WorkoutSession
 
-// Change version to 2 because we added the 'isSynced' column to WorkoutEntity
-@Database(entities = [WorkoutEntity::class], version = 2, exportSchema = false)
+@Database(entities = [WorkoutSession::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class FitSyncDatabase : RoomDatabase() {
 

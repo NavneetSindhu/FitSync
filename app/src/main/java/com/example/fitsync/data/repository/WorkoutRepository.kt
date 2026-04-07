@@ -1,8 +1,8 @@
 package com.example.fitsync.data.repository
 
 import com.example.fitsync.data.local.dao.WorkoutDao
-import com.example.fitsync.data.local.entity.WorkoutEntity
 import com.example.fitsync.data.remote.ApiService
+import com.example.fitsync.domain.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -14,12 +14,12 @@ class WorkoutRepository @Inject constructor(
     private val apiService: ApiService
 ) {
     // 1. Observe data as a Flow for the UI
-    fun getAllWorkouts(): Flow<List<WorkoutEntity>> = workoutDao.getAllWorkouts()
+    fun getAllWorkouts(): Flow<List<WorkoutSession>> = workoutDao.getAllWorkouts()
 
     // 2. Simple helper for the ViewModel to get a snapshot
-    suspend fun getAllWorkoutsSync(): List<WorkoutEntity> = workoutDao.getAllWorkouts().first()
+    suspend fun getAllWorkoutsSync(): List<WorkoutSession> = workoutDao.getAllWorkouts().first()
 
-    suspend fun insert(workout: WorkoutEntity, binId: String) {
+    suspend fun insert(workout: WorkoutSession, binId: String) {
         // Save locally first for speed
         workoutDao.insertWorkout(workout)
 
@@ -50,12 +50,7 @@ class WorkoutRepository @Inject constructor(
      * BULK UPDATE: Marks all local items as synced in one go.
      */
     suspend fun markAllAsSynced() {
-        val allWorkouts = getAllWorkoutsSync()
-        allWorkouts.forEach { workout ->
-            if (!workout.isSynced) {
-                workoutDao.insertWorkout(workout.copy(isSynced = true))
-            }
-        }
+        workoutDao.markAllAsSynced()
     }
 
     suspend fun deleteEverything(binId: String) {
@@ -71,5 +66,7 @@ class WorkoutRepository @Inject constructor(
         syncToCloud(binId)
     }
 
-    suspend fun delete(workout: WorkoutEntity) = workoutDao.deleteWorkout(workout)
+
+
+    suspend fun delete(workout: WorkoutSession) = workoutDao.deleteWorkout(workout)
 }

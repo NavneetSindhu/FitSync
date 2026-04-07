@@ -1,5 +1,7 @@
 package com.example.fitsync.domain.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -17,8 +19,12 @@ data class Exercise(
 )
 
 @Serializable
+@Entity(tableName = "workouts")
 data class WorkoutSession(
-    val id:String = UUID.randomUUID().toString(),
+    @PrimaryKey(autoGenerate = true)
+    val id:Long,
     val date:Long = System.currentTimeMillis(),
-    val exercise:List<Exercise>
+    val exercise:List<Exercise>,
+    val isSynced: Boolean = false
 )
+
