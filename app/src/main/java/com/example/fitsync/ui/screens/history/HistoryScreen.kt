@@ -11,6 +11,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.fitsync.domain.model.WorkoutSession
 import com.example.fitsync.ui.components.HistoryWorkoutCard
 import com.example.fitsync.ui.theme.*
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,22 +39,20 @@ import java.util.*
 @Composable
 fun HistoryScreen(
     onBackClick: () -> Unit,
+    onEditWorkout: (WorkoutSession) -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val workouts by viewModel.workoutHistory.collectAsState(initial = emptyList())
-
     var selectedMonth by remember { mutableStateOf("All") }
     var selectedExercise by remember { mutableStateOf("All") }
 
     val monthFormatter = remember { SimpleDateFormat("MMMM", Locale.getDefault()) }
 
-    // --- REFACTORED DATA LOGIC ---
     val availableMonths = remember(workouts) {
         listOf("All") + workouts.map { monthFormatter.format(Date(it.date)) }.distinct()
     }
 
     val availableExercises = remember(workouts) {
-        // Updated to use .exercise (singular) from your new model
         listOf("All") + workouts.flatMap { it.exercise.map { ex -> ex.name } }.distinct()
     }
 
@@ -54,7 +60,6 @@ fun HistoryScreen(
         workouts.filter { workout ->
             val workoutMonth = monthFormatter.format(Date(workout.date))
             val monthMatch = selectedMonth == "All" || workoutMonth == selectedMonth
-            // Updated to use .exercise (singular)
             val exerciseMatch = selectedExercise == "All" || workout.exercise.any { it.name == selectedExercise }
             monthMatch && exerciseMatch
         }
@@ -71,24 +76,17 @@ fun HistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text("Workout History", fontWeight = FontWeight.ExtraBold)
-                },
+                title = { Text("Workout History", fontWeight = FontWeight.ExtraBold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+                }
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-
-            // --- FILTER CHIPS ---
+            // Filter Chips
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
                 FilterChipRow(availableMonths, selectedMonth) { selectedMonth = it }
                 FilterChipRow(availableExercises, selectedExercise) { selectedExercise = it }
@@ -102,17 +100,12 @@ fun HistoryScreen(
                     contentPadding = PaddingValues(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item {
-                        HistorySummaryHeader(filteredWorkouts.size, totalVolume)
-                    }
+                    item { HistorySummaryHeader(filteredWorkouts.size, totalVolume) }
 
-                    items(
-                        items = filteredWorkouts,
-                        key = { it.id } // Now uses your Long ID
-                    ) { workout ->
-                        SwipeToDeleteContainer(
-                            item = workout,
-                            onDelete = { viewModel.deleteWorkout(it) }
+                    items(items = filteredWorkouts, key = { it.id }) { workout ->
+                        SwipeActionContainer(
+                            onDelete = { viewModel.deleteWorkout(workout) },
+                            onEdit = { onEditWorkout(workout) }
                         ) {
                             HistoryWorkoutCard(workout = workout)
                         }
@@ -123,7 +116,84 @@ fun HistoryScreen(
     }
 }
 
-// --- Support Components ---
+@Composable
+fun SwipeActionContainer(
+    onDelete: () -> Unit,
+    onEdit: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+
+    // Total width of the reveal area (Edit icon + Spacer + Delete icon)
+    val actionsWidth = 120.dp
+    val actionsWidthPx = with(density) { actionsWidth.toPx() }
+
+    // Tracks the horizontal displacement of the card
+    val offsetX = remember { Animatable(0f) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min) // Keeps background height same as card
+            .padding(vertical = 4.dp)
+    ) {
+        // --- BACKGROUND LAYER (The Icons) ---
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight()
+                .width(actionsWidth)
+                .padding(end = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = {
+                scope.launch { offsetX.animateTo(0f) } // Close card after click
+                onEdit()
+            }) {
+                Icon(Icons.Default.Edit, "Edit", tint = SuccessGreen)
+            }
+
+            IconButton(onClick = {
+                scope.launch { offsetX.animateTo(0f) } // Close card after click
+                onDelete()
+            }) {
+                Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+            }
+        }
+
+        // --- FOREGROUND LAYER (The History Card) ---
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.background)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            // Only allow swiping to the left, up to our action width
+                            val newOffset = (offsetX.value + dragAmount).coerceIn(-actionsWidthPx, 0f)
+                            scope.launch { offsetX.snapTo(newOffset) }
+                        },
+                        onDragEnd = {
+                            scope.launch {
+                                // If dragged more than half way, snap open, else snap shut
+                                if (offsetX.value < -actionsWidthPx / 2) {
+                                    offsetX.animateTo(-actionsWidthPx)
+                                } else {
+                                    offsetX.animateTo(0f)
+                                }
+                            }
+                        }
+                    )
+                }
+        ) {
+            content()
+        }
+    }
+}
 
 @Composable
 fun HistorySummaryHeader(count: Int, volume: Int) {
@@ -147,46 +217,6 @@ fun HistorySummaryHeader(count: Int, volume: Int) {
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SwipeToDeleteContainer(
-    item: WorkoutSession,
-    onDelete: (WorkoutSession) -> Unit,
-    content: @Composable () -> Unit
-) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = {
-            if (it == SwipeToDismissBoxValue.EndToStart) {
-                onDelete(item)
-                true
-            } else false
-        }
-    )
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            val color = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
-                MaterialTheme.colorScheme.error else Color.Transparent
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 4.dp)
-                    .background(color, RoundedCornerShape(16.dp)),
-                Alignment.CenterEnd
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    null,
-                    tint = Color.White,
-                    modifier = Modifier.padding(end = 16.dp)
-                )
-            }
-        },
-        content = { content() }
-    )
 }
 
 @Composable
