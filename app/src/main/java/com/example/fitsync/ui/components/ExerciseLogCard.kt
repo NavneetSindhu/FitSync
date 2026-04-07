@@ -1,6 +1,5 @@
 package com.example.fitsync.ui.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -17,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -40,7 +40,7 @@ fun ExerciseLogCard(
     sets: List<WorkoutSet>,
     unit: String,
     accentColor: Color,
-    exerciseIcon: ImageVector,
+    exerciseIcon: ImageVector, // Note: ExerciseIcon component handles this internally now
     onAddSet: () -> Unit,
     onUpdateSet: (Int, Float, Int) -> Unit,
     onToggleSet: (Int) -> Unit,
@@ -52,31 +52,26 @@ fun ExerciseLogCard(
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        // THE FIX: Use surface token
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header
+            // --- HEADER ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        modifier = Modifier.size(32.dp),
-                        color = accentColor.copy(alpha = 0.2f),
-                        shape = CircleShape
-                    ) {
-                        Icon(exerciseIcon, null, Modifier.padding(6.dp), tint = accentColor)
-                    }
+                    // 🔥 REPLACED: Using the new ExerciseIcon component
+                    ExerciseIcon(name = exerciseName, size = 40.dp)
+
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        exerciseName,
+                        text = exerciseName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -91,25 +86,30 @@ fun ExerciseLogCard(
                         containerColor = MaterialTheme.colorScheme.surface
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Delete Exercise", color = Color.Red) },
-                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = Color.Red) },
+                            text = { Text("Delete Exercise", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
                             onClick = { showMenu = false; onDeleteExercise() }
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Labels (SET, KG/LBS, REPS)
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // --- LABELS ---
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text("SET", Modifier.width(40.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Text(unit.uppercase(), Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Text("REPS", Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.size(40.dp))
             }
 
-            // Sets List
+            Spacer(Modifier.height(8.dp))
+
+            // --- SETS LIST ---
             sets.forEach { set ->
                 key(set.setNumber) {
                     SwipeToRevealDelete(onDelete = { onDeleteSet(set.setNumber) }) {
@@ -122,16 +122,21 @@ fun ExerciseLogCard(
                 }
             }
 
-            TextButton(onClick = onAddSet, Modifier.align(Alignment.CenterHorizontally)) {
-                Icon(Icons.Default.Add, null, Modifier.size(18.dp), tint = AccentRed)
+            Spacer(Modifier.height(8.dp))
+
+            // --- ADD SET BUTTON ---
+            TextButton(
+                onClick = onAddSet,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Add Set", color = AccentRed, fontWeight = FontWeight.Bold)
+                Text("Add Set", fontWeight = FontWeight.ExtraBold)
             }
         }
     }
 }
-
-// --- HELPER COMPONENTS ---
 
 @Composable
 fun SwipeToRevealDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
@@ -139,23 +144,20 @@ fun SwipeToRevealDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
     val scope = rememberCoroutineScope()
     val buttonWidth = 72.dp
     val buttonWidthPx = with(density) { buttonWidth.toPx() }
-    val configuration = LocalConfiguration.current
-    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
     val offsetX = remember { Animatable(0f) }
-    offsetX.updateBounds(lowerBound = -screenWidthPx, upperBound = 0f)
 
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).height(IntrinsicSize.Min)) {
-        // DELETE BACKGROUND
+        // DELETE BACKGROUND (Revealed behind)
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .fillMaxHeight()
                 .width(buttonWidth)
-                // Use errorContainer for a subtle dark red in dark mode
-                .background(MaterialTheme.colorScheme.errorContainer, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.errorContainer)
                 .clickable {
                     scope.launch {
-                        offsetX.animateTo(-screenWidthPx, tween(300))
+                        offsetX.animateTo(-500f, tween(200)) // Slide out fully
                         onDelete()
                     }
                 },
@@ -164,50 +166,45 @@ fun SwipeToRevealDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
             Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
         }
 
-        // CONTENT LAYER
+        // CONTENT LAYER (Sliding part)
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .background(MaterialTheme.colorScheme.surface) // Adaptive background
+                .background(MaterialTheme.colorScheme.surface)
                 .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            scope.launch {
-                                val newOffset = (offsetX.value + dragAmount).coerceIn(-buttonWidthPx, 0f)
-                                offsetX.snapTo(newOffset)
-                            }
-                        },
-                        onDragEnd = {
-                            scope.launch {
-                                if (offsetX.value < -buttonWidthPx / 2) offsetX.animateTo(-buttonWidthPx)
-                                else offsetX.animateTo(0f)
-                            }
-                        }
-                    )
+                    detectHorizontalDragGestures { change, dragAmount ->
+                        change.consume()
+                        val newOffset = (offsetX.value + dragAmount).coerceIn(-buttonWidthPx, 0f)
+                        scope.launch { offsetX.snapTo(newOffset) }
+                    }
                 }
-        ) { content() }
+        ) {
+            content()
+        }
     }
 }
 
 @Composable
 fun SetLogRow(set: WorkoutSet, onValueChange: (Float, Int) -> Unit, onToggle: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         // Set Number Badge
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(32.dp)
                 .background(
-                    if (set.isCompleted) SuccessGreen.copy(0.12f)
+                    if (set.isCompleted) SuccessGreen.copy(0.15f)
                     else MaterialTheme.colorScheme.surfaceVariant,
                     CircleShape
                 ),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                set.setNumber.toString(),
+                text = set.setNumber.toString(),
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.ExtraBold,
                 color = if (set.isCompleted) SuccessGreen else MaterialTheme.colorScheme.onSurface
             )
         }
@@ -226,10 +223,10 @@ fun SetLogRow(set: WorkoutSet, onValueChange: (Float, Int) -> Unit, onToggle: ()
 
         IconButton(onClick = onToggle, modifier = Modifier.size(40.dp)) {
             Icon(
-                Icons.Default.CheckCircle,
-                null,
+                imageVector = if (set.isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                contentDescription = "Toggle Set",
                 tint = if (set.isCompleted) SuccessGreen else MaterialTheme.colorScheme.outlineVariant,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(26.dp)
             )
         }
     }
@@ -241,12 +238,11 @@ fun GymInputField(value: String, onValueChange: (String) -> Unit, modifier: Modi
         value = value,
         onValueChange = onValueChange,
         modifier = modifier
-            .height(36.dp)
-            // Use surfaceVariant for a subtle dark input field
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(18.dp)),
+            .height(40.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
         textStyle = TextStyle(
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.ExtraBold,
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurface
         ),
@@ -255,11 +251,7 @@ fun GymInputField(value: String, onValueChange: (String) -> Unit, modifier: Modi
         decorationBox = { inner ->
             Box(contentAlignment = Alignment.Center) {
                 if (value.isEmpty()) {
-                    Text(
-                        "0",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f),
-                        fontSize = 16.sp
-                    )
+                    Text("0", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.4f), fontSize = 16.sp)
                 }
                 inner()
             }
