@@ -1,27 +1,51 @@
 package com.example.fitsync.ui.theme
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
+import com.example.fitsync.R
 
-data class ExerciseMetaData(
-    val icon: ImageVector,
-    val accentColor: Color,
-    val category: String
+/**
+ * Metadata for exercise visuals using PNG resources from Flaticon.
+ */
+data class ExerciseMeta(
+    val iconRes: Int,
+    val accentColor: Color
 )
 
 object ExerciseVisuals {
-    private val default = ExerciseMetaData(Icons.Default.FitnessCenter, SoftGray, "Other")
+    fun getMetaData(name: String): ExerciseMeta {
+        return when {
+            // Chest
+            name.contains("Bench", true) ->
+                ExerciseMeta(R.drawable.ic_chest_bench, AccentRed)
+            name.contains("Push", true) || name.contains("Pushup", true) ->
+                ExerciseMeta(R.drawable.ic_chest_pushup, AccentRed)
 
-    private val mapping = mapOf(
-        "Barbell Squat" to ExerciseMetaData(Icons.Default.AccessibilityNew, Color(0xFF4CAF50), "Legs"),
-        "Bench Press" to ExerciseMetaData(Icons.Default.LineWeight, Color(0xFF2196F3), "Chest"),
-        "Deadlift" to ExerciseMetaData(Icons.Default.FitnessCenter, Color(0xFFF44336), "Back/Legs"),
-        "Overhead Press" to ExerciseMetaData(Icons.Default.Upgrade, Color(0xFFFF9800), "Shoulders"),
-        "Pull Ups" to ExerciseMetaData(Icons.Default.VerticalAlignTop, Color(0xFF9C27B0), "Back"),
-        "Dips" to ExerciseMetaData(Icons.Default.KeyboardDoubleArrowDown, Color(0xFF00BCD4), "Triceps")
-    )
+            // Back
+            name.contains("Deadlift", true) ->
+                ExerciseMeta(R.drawable.ic_back_deadlift, AccentRed)
+            name.contains("Pull", true) || name.contains("Pullup", true) ->
+                ExerciseMeta(R.drawable.ic_back_pullup, AccentRed)
+            name.contains("Row", true) || name.contains("Rowing", true) ->
+                ExerciseMeta(R.drawable.ic_back_rowing, AccentRed)
 
-    fun getMetaData(name: String): ExerciseMetaData = mapping[name] ?: default
+            // Legs
+            name.contains("Squat", true) ->
+                ExerciseMeta(R.drawable.ic_leg_squat, AccentRed)
+            name.contains("Lunge", true) || name.contains("Lunges", true) ->
+                ExerciseMeta(R.drawable.ic_leg_lunges, AccentRed)
+
+            // Shoulders & Arms
+            name.contains("Press", true) ->
+                ExerciseMeta(R.drawable.ic_shoulder_press, AccentRed)
+            name.contains("Dip", true) || name.contains("Dips", true) ->
+                ExerciseMeta(R.drawable.ic_shoulder_dips, AccentRed)
+
+            // Cardio
+            name.contains("Run", true) || name.contains("Cardio", true) ->
+                ExerciseMeta(R.drawable.ic_cardio_running, AccentRed)
+
+            // Fallback (Using Pullup as the default icon)
+            else -> ExerciseMeta(R.drawable.ic_back_pullup, Color.Gray)
+        }
+    }
 }

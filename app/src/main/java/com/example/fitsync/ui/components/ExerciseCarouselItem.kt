@@ -1,7 +1,7 @@
-// File: app/src/main/java/com/example/fitsync/ui/components/ExerciseCarouselItem.kt
 package com.example.fitsync.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,49 +11,68 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fitsync.ui.theme.ExerciseVisuals // Make sure this import is correct
+import com.example.fitsync.ui.theme.ExerciseVisuals
 
 @Composable
-fun ExerciseCarouselItem(name: String, isSelected: Boolean, onClick: () -> Unit) {
+fun ExerciseCarouselItem(
+    name: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
     val meta = ExerciseVisuals.getMetaData(name)
-    val backgroundColor by animateColorAsState(if (isSelected) meta.accentColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-    val contentColor by animateColorAsState(if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+
+    // Animate colors for a smooth selection feel
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isSelected) meta.accentColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        label = "bg_color"
+    )
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "content_color"
+    )
 
     Surface(
         modifier = Modifier
             .width(90.dp)
-            .height(70.dp)
+            .height(75.dp) // Increased slightly for better breathability
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        color = backgroundColor
+        shape = RoundedCornerShape(16.dp), // Matched your new 16dp rounded UI style
+        color = backgroundColor,
+        tonalElevation = if (isSelected) 4.dp else 0.dp
     ) {
-        // Use a Box to center the entire content perfectly
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(4.dp)
             ) {
-                // Fixed size icon container ensures different icon shapes don't shift the text
-                Icon(
-                    imageVector = meta.icon,
+                // 🔥 UPDATED: Using Image with painterResource for your Flaticon PNGs
+                Image(
+                    painter = painterResource(id = meta.iconRes),
                     contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(24.dp),
+                    // Tints the PNG white when selected, or AccentRed when unselected
+                    colorFilter = ColorFilter.tint(contentColor)
                 )
-                Spacer(Modifier.height(4.dp))
+
+                Spacer(Modifier.height(6.dp))
+
                 Text(
                     text = name,
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.ExtraBold,
                     color = contentColor,
                     maxLines = 1,
-                    fontSize = 10.sp
+                    fontSize = 10.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
