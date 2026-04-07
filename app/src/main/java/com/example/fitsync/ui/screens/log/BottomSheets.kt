@@ -1,7 +1,6 @@
 package com.example.fitsync.ui.screens.log
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,11 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.fitsync.ui.components.ExerciseIcon
+import com.example.fitsync.ui.theme.AccentRed
 import com.example.fitsync.ui.theme.ExerciseVisuals
 import kotlinx.coroutines.launch
 
@@ -32,7 +32,6 @@ fun AddExerciseBottomSheet(
     val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
 
-    // Your available exercises with logic to pull metadata
     val exercises = listOf(
         "Barbell Squat", "Bench Press", "Deadlift", "Overhead Press",
         "Pull Ups", "Barbell Row", "Dips", "Push Ups", "Lunges"
@@ -65,18 +64,17 @@ fun AddExerciseBottomSheet(
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search by muscle or name...") },
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary) },
+                leadingIcon = { Icon(Icons.Default.Search, null, tint = AccentRed) },
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedBorderColor = AccentRed,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
             )
 
             Spacer(Modifier.height(20.dp))
 
-            // CHANGED: Using a Grid for a more "Gallery" feel
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -84,8 +82,6 @@ fun AddExerciseBottomSheet(
                 modifier = Modifier.weight(1f)
             ) {
                 items(exercises) { name ->
-                    val meta = ExerciseVisuals.getMetaData(name)
-
                     Surface(
                         onClick = {
                             onAddExercise(name)
@@ -99,20 +95,11 @@ fun AddExerciseBottomSheet(
                             modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // ICON CIRCLE
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(meta.accentColor.copy(alpha = 0.15f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = meta.icon,
-                                    contentDescription = null,
-                                    tint = meta.accentColor,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                            // 🔥 UPDATED: Using the new ExerciseIcon (PNG + Tint logic)
+                            ExerciseIcon(
+                                name = name,
+                                size = 48.dp
+                            )
 
                             Spacer(Modifier.height(12.dp))
 
@@ -161,7 +148,6 @@ fun CreateWorkoutBottomSheet(
                 fontWeight = FontWeight.ExtraBold
             )
 
-            // CATEGORY TAGS (FlowRow makes them wrap nicely)
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -174,14 +160,13 @@ fun CreateWorkoutBottomSheet(
                         label = { Text(option) },
                         shape = RoundedCornerShape(12.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedContainerColor = AccentRed,
                             selectedLabelColor = Color.White
                         )
                     )
                 }
             }
 
-            // DYNAMIC INPUT FIELD
             if (selectedOption == "Custom") {
                 OutlinedTextField(
                     value = customName,
@@ -192,11 +177,10 @@ fun CreateWorkoutBottomSheet(
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                        focusedBorderColor = AccentRed
                     )
                 )
             } else {
-                // Visual feedback for selected standard split
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -206,7 +190,7 @@ fun CreateWorkoutBottomSheet(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+                        Box(Modifier.size(8.dp).background(AccentRed, CircleShape))
                         Spacer(Modifier.width(12.dp))
                         Text(
                             "You are starting a $selectedOption session.",
@@ -225,7 +209,7 @@ fun CreateWorkoutBottomSheet(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = AccentRed
                 ),
                 elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {

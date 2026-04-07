@@ -34,7 +34,7 @@ import com.example.fitsync.ui.screens.log.AddExerciseBottomSheet
 import com.example.fitsync.ui.screens.log.CreateWorkoutBottomSheet
 import com.example.fitsync.ui.screens.log.DailyLogUiState
 import com.example.fitsync.ui.screens.log.DailyLogViewModel
-import com.example.fitsync.ui.screens.log.TodayTabContent
+import com.example.fitsync.ui.screens.log.LoggingScreen
 import com.example.fitsync.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -43,14 +43,13 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    onSyncClick: () -> Unit,
     viewModel: DailyLogViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val userName by homeViewModel.userName.collectAsState()
 
-    // Pager State (0 = Stats, 1 = Today) - Start on Today (1)
+    // Start on Today (1) if there's an active workout, otherwise Stats (0)
     val pagerState = rememberPagerState(pageCount = { 2 }, initialPage = 1)
     val coroutineScope = rememberCoroutineScope()
 
@@ -61,14 +60,13 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-
                 title = {
                     Column {
                         Text(
                             text = "FitSync",
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary,
-                            fontSize = 20.sp
+                            fontSize = 22.sp
                         )
                         Text(
                             text = uiState.date,
@@ -78,15 +76,18 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    // History Icon added here for quick access
+                    IconButton(onClick = onHistoryClick) {
+                        Icon(Icons.Default.History, "History", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         floatingActionButton = {
-            // Animated FAB that swaps based on the current page
             AnimatedContent(
                 targetState = pagerState.currentPage,
                 transitionSpec = {
@@ -94,7 +95,7 @@ fun HomeScreen(
                 },
                 label = "FAB_Animation"
             ) { targetPage ->
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = {
                         if (targetPage == 0) showCreateWorkoutSheet = true
                         else showAddExerciseSheet = true
@@ -102,13 +103,17 @@ fun HomeScreen(
                     containerColor = AccentRed,
                     contentColor = Color.White,
                     shape = CircleShape,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (targetPage == 0) Icons.Default.PlayArrow else Icons.Default.Add,
-                        contentDescription = if (targetPage == 0) "Start Workout" else "Add Exercise"
-                    )
-                }
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    icon = {
+                        Icon(
+                            imageVector = if (targetPage == 0) Icons.Default.PlayArrow else Icons.Default.Add,
+                            contentDescription = null
+                        )
+                    },
+                    text = {
+                        Text(if (targetPage == 0) "Start Workout" else "Add Exercise", fontWeight = FontWeight.Bold)
+                    }
+                )
             }
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -118,7 +123,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Custom Pill Segmented Control
+            // Pill Tab Row
             PillTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 onTabSelected = { index ->
@@ -128,16 +133,22 @@ fun HomeScreen(
                 }
             )
 
-            // Smooth Sliding Pager
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.Top,
-                userScrollEnabled = false
+                userScrollEnabled = false // Keep navigation strictly through the Pill Tabs
             ) { page ->
                 when (page) {
                     0 -> StatsTabContent(userName = userName)
-                    1 -> TodayTabContent(viewModel = viewModel, uiState = uiState)
+                    1 -> LoggingScreen(
+                        viewModel = viewModel,
+                        uiState = uiState,
+                        onFinishWorkout = {
+                            // After saving, jump to stats or stay on empty today
+                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
+                        }
+                    )
                 }
             }
         }
@@ -146,7 +157,10 @@ fun HomeScreen(
         if (showAddExerciseSheet) {
             AddExerciseBottomSheet(
                 onDismiss = { showAddExerciseSheet = false },
-                onAddExercise = { name -> viewModel.addExercise(name) }
+                onAddExercise = { name ->
+                    viewModel.addExercise(name)
+                    showAddExerciseSheet = false
+                }
             )
         }
 
@@ -154,9 +168,11 @@ fun HomeScreen(
             CreateWorkoutBottomSheet(
                 onDismiss = { showCreateWorkoutSheet = false },
                 onStartWorkout = { presetName, isCustom ->
-                    // Handle passing to ViewModel here
+                    // 1. Logic to populate the workout based on the split name
+                    // (You can add a function in ViewModel: viewModel.startSplit(presetName))
+
                     showCreateWorkoutSheet = false
-                    coroutineScope.launch { pagerState.animateScrollToPage(1) } // Slide to "Today" tab
+                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
                 }
             )
         }
