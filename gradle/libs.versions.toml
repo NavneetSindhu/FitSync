@@ -20,6 +20,8 @@ navigationCompose = "2.8.0"
 # Database
 room = "2.6.1"
 
+ycharts = "2.1.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -48,6 +50,7 @@ ktor-client-serialization = { group = "io.ktor", name = "ktor-client-serializati
 ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
+ycharts = { group = "co.yml", name = "ycharts", version.ref = "ycharts" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

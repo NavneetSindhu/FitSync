@@ -1,7 +1,10 @@
 package com.example.fitsync.ui.screens.history
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -12,28 +15,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.fitsync.domain.model.Exercise
 import com.example.fitsync.domain.model.WorkoutSession
 import com.example.fitsync.ui.components.HistoryWorkoutCard
 import com.example.fitsync.ui.theme.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +45,10 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
     val workouts by viewModel.workoutHistory.collectAsState(initial = emptyList())
+
+    // --- STATE FOR BOTTOM SHEET ---
+    var selectedExerciseDetails by remember { mutableStateOf<Pair<String, List<Exercise>>?>(null) }
+
     var selectedMonth by remember { mutableStateOf("All") }
     var selectedExercise by remember { mutableStateOf("All") }
 
@@ -73,6 +79,16 @@ fun HistoryScreen(
         }.toInt()
     }
 
+    // Helper function to fetch and prepare history for the graph
+    fun openExerciseGraph(exerciseName: String) {
+        val history = workouts
+            .filter { session -> session.exercise.any { it.name == exerciseName } }
+            .sortedBy { it.date }
+            .map { session -> session.exercise.first { it.name == exerciseName } }
+
+        selectedExerciseDetails = Pair(exerciseName, history)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -81,11 +97,16 @@ fun HistoryScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
-                }
+                },
+                windowInsets = WindowInsets.statusBars
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             // Filter Chips
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
                 FilterChipRow(availableMonths, selectedMonth) { selectedMonth = it }
@@ -96,7 +117,9 @@ fun HistoryScreen(
                 EmptyHistoryState(Modifier.weight(1f))
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -107,11 +130,32 @@ fun HistoryScreen(
                             onDelete = { viewModel.deleteWorkout(workout) },
                             onEdit = { onEditWorkout(workout) }
                         ) {
-                            HistoryWorkoutCard(workout = workout)
+                            HistoryWorkoutCard(
+                                workout = workout,
+                                // 🔥 CLICK ANYWHERE ON CARD
+                                modifier = Modifier.clickable {
+                                    if (workout.exercise.isNotEmpty()) {
+                                        openExerciseGraph(workout.exercise.first().name)
+                                    }
+                                },
+                                // 🔥 CLICK SPECIFIC ICON
+                                onExerciseClick = { exerciseName ->
+                                    openExerciseGraph(exerciseName)
+                                }
+                            )
                         }
                     }
                 }
             }
+        }
+
+        // --- BOTTOM SHEET TRIGGER ---
+        selectedExerciseDetails?.let { (name, history) ->
+            ExerciseDetailBottomSheet(
+                exerciseName = name,
+                history = history,
+                onDismiss = { selectedExerciseDetails = null }
+            )
         }
     }
 }
@@ -124,21 +168,16 @@ fun SwipeActionContainer(
 ) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
-
-    // Total width of the reveal area (Edit icon + Spacer + Delete icon)
     val actionsWidth = 120.dp
     val actionsWidthPx = with(density) { actionsWidth.toPx() }
-
-    // Tracks the horizontal displacement of the card
     val offsetX = remember { Animatable(0f) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Min) // Keeps background height same as card
+            .height(IntrinsicSize.Min)
             .padding(vertical = 4.dp)
     ) {
-        // --- BACKGROUND LAYER (The Icons) ---
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -149,21 +188,19 @@ fun SwipeActionContainer(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = {
-                scope.launch { offsetX.animateTo(0f) } // Close card after click
+                scope.launch { offsetX.animateTo(0f) }
                 onEdit()
             }) {
                 Icon(Icons.Default.Edit, "Edit", tint = SuccessGreen)
             }
-
             IconButton(onClick = {
-                scope.launch { offsetX.animateTo(0f) } // Close card after click
+                scope.launch { offsetX.animateTo(0f) }
                 onDelete()
             }) {
                 Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
             }
         }
 
-        // --- FOREGROUND LAYER (The History Card) ---
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
@@ -173,13 +210,11 @@ fun SwipeActionContainer(
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            // Only allow swiping to the left, up to our action width
                             val newOffset = (offsetX.value + dragAmount).coerceIn(-actionsWidthPx, 0f)
                             scope.launch { offsetX.snapTo(newOffset) }
                         },
                         onDragEnd = {
                             scope.launch {
-                                // If dragged more than half way, snap open, else snap shut
                                 if (offsetX.value < -actionsWidthPx / 2) {
                                     offsetX.animateTo(-actionsWidthPx)
                                 } else {
@@ -203,7 +238,9 @@ fun HistorySummaryHeader(count: Int, volume: Int) {
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
-            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
