@@ -73,6 +73,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("com.google.android.material:material:1.11.0")
+
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)

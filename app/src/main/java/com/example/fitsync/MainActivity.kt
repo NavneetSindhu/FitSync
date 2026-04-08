@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -34,6 +35,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val systemSplashScreen = installSplashScreen()
+        systemSplashScreen.setKeepOnScreenCondition { false }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -55,7 +58,9 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    val shouldShowBottomBar = currentDestination?.hasRoute<Settings>() == false
+    val shouldShowBottomBar = currentDestination?.let { dest ->
+        !dest.hasRoute<Settings>() && !dest.hasRoute<Splash>()
+    } ?: true
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
