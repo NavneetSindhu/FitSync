@@ -48,7 +48,7 @@ fun FitSyncNavGraph(
                 viewModel = dailyLogViewModel,
                 uiState = uiState,
                 onFinishWorkout = {
-                    navController.popBackStack()
+//                    navController.popBackStack()
                 }
             )
         }

@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LoggingScreen( // 🔥 Renamed to match your file name "LoggingScreen"
+fun LoggingScreen( //
     viewModel: DailyLogViewModel,
     uiState: DailyLogUiState,
     onFinishWorkout: () -> Unit

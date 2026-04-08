@@ -50,7 +50,7 @@ fun HomeScreen(
     val userName by homeViewModel.userName.collectAsState()
 
     // Start on Today (1) if there's an active workout, otherwise Stats (0)
-    val pagerState = rememberPagerState(pageCount = { 2 }, initialPage = 1)
+    val pagerState = rememberPagerState(pageCount = { 2 }, initialPage = 0)
     val coroutineScope = rememberCoroutineScope()
 
     // Bottom Sheet States
@@ -146,7 +146,7 @@ fun HomeScreen(
                         uiState = uiState,
                         onFinishWorkout = {
                             // After saving, jump to stats or stay on empty today
-                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
+//                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
                         }
                     )
                 }
