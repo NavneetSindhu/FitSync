@@ -14,6 +14,7 @@ import com.example.fitsync.ui.screens.sync.SyncScreen
 import com.example.fitsync.ui.screens.settings.SettingsScreen
 import com.example.fitsync.ui.screens.settings.SettingsViewModel
 import com.example.fitsync.ui.screens.log.DailyLogViewModel // Added import
+import com.example.fitsync.ui.screens.splash.SplashScreen
 import kotlinx.serialization.Serializable
 
 @Serializable object Home
@@ -22,6 +23,9 @@ import kotlinx.serialization.Serializable
 @Serializable object Sync
 @Serializable object Settings
 
+@Serializable
+object Splash
+
 @Composable
 fun FitSyncNavGraph(
     navController: NavHostController,
@@ -29,8 +33,16 @@ fun FitSyncNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Home
+        startDestination = Splash
     ) {
+
+        composable<Splash> {
+            SplashScreen(onAnimationFinished = {
+                navController.navigate(Home) {
+                    popUpTo(Splash) { inclusive = true }
+                }
+            })
+        }
         composable<Home> {
             // Note: HomeScreen now contains LoggingScreen inside its Pager
             HomeScreen(
