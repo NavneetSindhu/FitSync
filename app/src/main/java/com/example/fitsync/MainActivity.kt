@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val isDarkMode by settingsViewModel.isDarkMode.collectAsState()
 
-            FitSyncTheme(darkTheme = isDarkMode) {
+            FitSyncTheme(darkTheme = isDarkMode, dynamicColor = false) {
                 // 2. Pass it into the container
                 FitSyncAppContainer(settingsViewModel)
             }

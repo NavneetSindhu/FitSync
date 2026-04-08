@@ -61,10 +61,16 @@ fun FitSyncTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Make status bar color match the background
-            window.statusBarColor = colorScheme.background.toArgb()
-            // Ensure icons are visible (dark icons on light bg, light icons on dark bg)
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+
+            // 🔥 REMOVED: window.statusBarColor = ...
+            // We let enableEdgeToEdge keep it transparent for a seamless look.
+
+            val insetsController = WindowCompat.getInsetsController(window, view)
+
+            // Light Mode (!darkTheme) -> Dark Icons
+            // Dark Mode (darkTheme) -> Light Icons
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
