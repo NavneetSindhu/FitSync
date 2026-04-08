@@ -1,5 +1,6 @@
 package com.example.fitsync.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitsync.domain.model.WorkoutSession
@@ -20,14 +22,14 @@ import java.util.*
 @Composable
 fun HistoryWorkoutCard(
     workout: WorkoutSession,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // 🔥 NEW: Callback to trigger the Bottom Sheet graph
+    onExerciseClick: (String) -> Unit = {}
 ) {
-    // 1. Format date
     val dateString = remember(workout.date) {
         SimpleDateFormat("EEE, MMM dd", Locale.getDefault()).format(Date(workout.date))
     }
 
-    // 2. Calculate volume based on the correct field name 'exercise'
     val workoutVolume = remember(workout.exercise) {
         workout.exercise.sumOf { exercise ->
             exercise.sets.sumOf { (it.weight * it.reps).toDouble() }
@@ -66,18 +68,24 @@ fun HistoryWorkoutCard(
 
             Spacer(Modifier.height(16.dp))
 
-            // --- EXERCISE ICONS (Using new ExerciseIcon component) ---
+            // --- EXERCISE ICONS ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 workout.exercise.take(5).forEach { ex ->
-                    // 🔥 REPLACED: Using your brand new reusable component here
-                    ExerciseIcon(
-                        name = ex.name,
-                        size = 36.dp
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            // 🔥 Makes each icon clickable to open the specific graph
+                            .clickable { onExerciseClick(ex.name) }
+                    ) {
+                        ExerciseIcon(
+                            name = ex.name,
+                            size = 36.dp
+                        )
+                    }
                 }
 
                 if (workout.exercise.size > 5) {
