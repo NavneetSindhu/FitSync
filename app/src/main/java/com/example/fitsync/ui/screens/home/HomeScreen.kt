@@ -23,10 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.fitsync.domain.model.WorkoutSummary
 import com.example.fitsync.ui.components.MiniStatCard
+import com.example.fitsync.ui.screens.home.heatmap.ProductionCalendar
 import com.example.fitsync.ui.screens.home.heatmap.StreakCard
-import com.example.fitsync.ui.screens.home.heatmap.WorkoutCalendarHeatmap
-import com.example.fitsync.ui.screens.home.heatmap.WorkoutDay
 import com.example.fitsync.ui.screens.log.AddExerciseBottomSheet
 import com.example.fitsync.ui.screens.log.CreateWorkoutBottomSheet
 import com.example.fitsync.ui.screens.log.DailyLogViewModel
@@ -34,7 +34,6 @@ import com.example.fitsync.ui.screens.log.LoggingScreen
 import com.example.fitsync.ui.theme.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -212,15 +211,15 @@ fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
 
 @Composable
 fun StatsTabContent(userName: String) {
-    // Generate mock data for the current month only
-    val mockWorkoutDays = remember {
-        val currentMonth = YearMonth.now()
-        (1..currentMonth.lengthOfMonth()).map { day ->
-            WorkoutDay(
-                date = currentMonth.atDay(day),
-                intensity = (0..4).random()
-            )
-        }
+    // 1. State Hoisting (Normally this lives in the ViewModel)
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+
+    // Mock Data for the Map
+    val mockWorkoutMap = remember {
+        val map = mutableMapOf<LocalDate, WorkoutSummary>()
+        map[LocalDate.now().minusDays(1)] = WorkoutSummary(3, "14.2k", 48)
+        map[LocalDate.now().minusDays(3)] = WorkoutSummary(1, "8.1k", 24)
+        map
     }
 
     LazyColumn(
@@ -250,8 +249,133 @@ fun StatsTabContent(userName: String) {
         }
 
         item {
-            // Using the full Calendar component here
-            WorkoutCalendarHeatmap(workoutDays = mockWorkoutDays)
+            ProductionCalendar(
+                selectedDate = selectedDate,
+                workoutMap = mockWorkoutMap,
+                onDateSelected = { selectedDate = it },
+                onMonthChanged = { newMonth ->
+                    // Trigger ViewModel to fetch new month data here
+                }
+            )
+        }
+
+        // 2. Dynamic Details Card below the calendar
+        item {
+            val summary = mockWorkoutMap[selectedDate]
+            val isFuture = selectedDate.isAfter(LocalDate.now())
+
+            AnimatedContent(
+                targetState = Triple(summary != null, isFuture, selectedDate),
+                label = "DetailsCardAnimation"
+            ) { (hasData, future, date) ->
+                when {
+                    hasData -> {
+                        WorkoutDetailsCard(date = date, summary = summary!!)
+                    }
+                    future -> {
+                        FutureDateCard(date = date)
+                    }
+                    else -> {
+                        EmptyPastWorkoutCard(
+                            date = date,
+                            onLogClick = {
+                                // Later: Open logging sheet with this date passed in
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WorkoutDetailsCard(date: LocalDate, summary: WorkoutSummary) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Workout on ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${date.dayOfMonth}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Volume: ${summary.volume}", style = MaterialTheme.typography.bodyMedium)
+                Text("Sets: ${summary.sets}", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+// ... existing imports ...
+
+@Composable
+fun EmptyPastWorkoutCard(date: LocalDate, onLogClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Rest Day",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "No workout logged on ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${date.dayOfMonth}.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(onClick = onLogClick) {
+                Text("Log Retroactively")
+            }
+        }
+    }
+}
+
+@Composable
+fun FutureDateCard(date: LocalDate) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "📅",
+                fontSize = 24.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Future Date",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
