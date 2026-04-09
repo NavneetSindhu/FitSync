@@ -7,9 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,17 +23,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.fitsync.ui.components.EmptyWorkoutState
-import com.example.fitsync.ui.components.ExerciseCarouselItem
-import com.example.fitsync.ui.components.ExerciseLogCard
 import com.example.fitsync.ui.components.MiniStatCard
+import com.example.fitsync.ui.screens.home.heatmap.StreakCard
+import com.example.fitsync.ui.screens.home.heatmap.WorkoutCalendarHeatmap
+import com.example.fitsync.ui.screens.home.heatmap.WorkoutDay
 import com.example.fitsync.ui.screens.log.AddExerciseBottomSheet
 import com.example.fitsync.ui.screens.log.CreateWorkoutBottomSheet
-import com.example.fitsync.ui.screens.log.DailyLogUiState
 import com.example.fitsync.ui.screens.log.DailyLogViewModel
 import com.example.fitsync.ui.screens.log.LoggingScreen
 import com.example.fitsync.ui.theme.*
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -49,11 +47,9 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val userName by homeViewModel.userName.collectAsState()
 
-    // Start on Today (1) if there's an active workout, otherwise Stats (0)
     val pagerState = rememberPagerState(pageCount = { 2 }, initialPage = 0)
     val coroutineScope = rememberCoroutineScope()
 
-    // Bottom Sheet States
     var showAddExerciseSheet by remember { mutableStateOf(false) }
     var showCreateWorkoutSheet by remember { mutableStateOf(false) }
 
@@ -76,7 +72,6 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    // History Icon added here for quick access
                     IconButton(onClick = onHistoryClick) {
                         Icon(Icons.Default.History, "History", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -123,7 +118,6 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Pill Tab Row
             PillTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 onTabSelected = { index ->
@@ -137,23 +131,19 @@ fun HomeScreen(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.Top,
-                userScrollEnabled = false // Keep navigation strictly through the Pill Tabs
+                userScrollEnabled = false
             ) { page ->
                 when (page) {
                     0 -> StatsTabContent(userName = userName)
                     1 -> LoggingScreen(
                         viewModel = viewModel,
                         uiState = uiState,
-                        onFinishWorkout = {
-                            // After saving, jump to stats or stay on empty today
-//                            coroutineScope.launch { pagerState.animateScrollToPage(0) }
-                        }
+                        onFinishWorkout = { }
                     )
                 }
             }
         }
 
-        // --- BOTTOM SHEETS ---
         if (showAddExerciseSheet) {
             AddExerciseBottomSheet(
                 onDismiss = { showAddExerciseSheet = false },
@@ -168,9 +158,6 @@ fun HomeScreen(
             CreateWorkoutBottomSheet(
                 onDismiss = { showCreateWorkoutSheet = false },
                 onStartWorkout = { presetName, isCustom ->
-                    // 1. Logic to populate the workout based on the split name
-                    // (You can add a function in ViewModel: viewModel.startSplit(presetName))
-
                     showCreateWorkoutSheet = false
                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
                 }
@@ -178,10 +165,6 @@ fun HomeScreen(
         }
     }
 }
-
-// ----------------------------------------------------
-// UI COMPONENTS
-// ----------------------------------------------------
 
 @Composable
 fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
@@ -229,6 +212,17 @@ fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
 
 @Composable
 fun StatsTabContent(userName: String) {
+    // Generate mock data for the current month only
+    val mockWorkoutDays = remember {
+        val currentMonth = YearMonth.now()
+        (1..currentMonth.lengthOfMonth()).map { day ->
+            WorkoutDay(
+                date = currentMonth.atDay(day),
+                intensity = (0..4).random()
+            )
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 120.dp, top = 16.dp)
@@ -242,24 +236,22 @@ fun StatsTabContent(userName: String) {
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.height(16.dp))
+
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     MiniStatCard("Volume", "12.4k", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-                    MiniStatCard("Streak", "5 Days", SuccessGreen, Modifier.weight(1f))
-                }
-
-                Spacer(Modifier.height(40.dp))
-
-                // Placeholder for future graphs
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Activity Heatmap Coming Soon", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    MiniStatCard("Sets", "42", SuccessGreen, Modifier.weight(1f))
                 }
             }
+        }
+
+        item {
+            Spacer(Modifier.height(24.dp))
+            StreakCard(streakCount = 5)
+        }
+
+        item {
+            // Using the full Calendar component here
+            WorkoutCalendarHeatmap(workoutDays = mockWorkoutDays)
         }
     }
 }
