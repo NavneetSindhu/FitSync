@@ -26,15 +26,29 @@ class SettingsViewModel @Inject constructor(
     private val _isMetric = MutableStateFlow(true)
     val isMetric = _isMetric.asStateFlow()
 
-    // --- DARK MODE LOGIC (PERSISTED) ---
-    // 1. Initialize from your PreferenceManager so it remembers the choice
+    // --- DARK MODE LOGIC ---
     private val _isDarkMode = MutableStateFlow(prefs.isDarkModeEnabled())
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
+    // --- NEW: ACCENT COLOR LOGIC ---
+    // Default to the original Deep Aqua (0xFF0D6890) if no custom color is saved
+    private val defaultAccentInt = 0xFF0D6890.toInt()
+
+    // Fetch the saved color from SharedPreferences/DataStore, falling back to default
+    private val _accentColor = MutableStateFlow(prefs.getAccentColor(defaultAccentInt))
+    val accentColor: StateFlow<Int> = _accentColor.asStateFlow()
+
+    fun updateAccentColor(colorInt: Int) {
+        viewModelScope.launch {
+            _accentColor.value = colorInt
+            // Save it to prefs so it survives app restarts
+            prefs.setAccentColor(colorInt)
+        }
+    }
 
     fun toggleDarkMode(enabled: Boolean) {
         viewModelScope.launch {
             _isDarkMode.value = enabled
-            // 2. Save it to prefs immediately
             prefs.setDarkMode(enabled)
         }
     }
@@ -53,9 +67,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             repository.deleteEverything(userId)
             prefs.clearAll()
+
+            // Reset state flows back to default
             _userName.value = "Athlete"
             _userGoal.value = "Stay Fit"
-            _isDarkMode.value = false // Reset theme on wipe
+            _isDarkMode.value = false
+            _accentColor.value = defaultAccentInt // Reset theme color
         }
     }
 }

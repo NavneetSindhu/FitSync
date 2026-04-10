@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.example.fitsync.ui.components.EmptyWorkoutState
 import com.example.fitsync.ui.components.ExerciseCarouselItem
 import com.example.fitsync.ui.components.ExerciseLogCard
-import com.example.fitsync.ui.theme.AccentRed
 import com.example.fitsync.ui.theme.ExerciseVisuals
+import com.example.fitsync.ui.theme.LocalAccentColor
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -60,7 +60,7 @@ fun LoggingScreen( //
                 text = "Current Session",
                 modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
                 style = MaterialTheme.typography.labelLarge,
-                color = AccentRed,
+                color = LocalAccentColor.current,
                 fontWeight = FontWeight.Bold
             )
 
@@ -95,7 +95,7 @@ fun LoggingScreen( //
                         onFinishWorkout()
                     },
                     shape = RoundedCornerShape(16.dp),
-                    color = AccentRed,
+                    color = LocalAccentColor.current,
                     contentColor = Color.White,
                     modifier = Modifier.size(56.dp),
                     tonalElevation = 4.dp
@@ -112,7 +112,7 @@ fun LoggingScreen( //
                 horizontalArrangement = Arrangement.Center
             ) {
                 repeat(uiState.exercises.size) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) AccentRed else AccentRed.copy(alpha = 0.2f)
+                    val color = if (pagerState.currentPage == iteration) LocalAccentColor.current else LocalAccentColor.current.copy(alpha = 0.2f)
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 3.dp)

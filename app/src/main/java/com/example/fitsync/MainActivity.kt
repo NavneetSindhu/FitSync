@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,8 +29,9 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.fitsync.ui.* import com.example.fitsync.ui.screens.settings.SettingsViewModel
-import com.example.fitsync.ui.theme.AccentRed
+import com.example.fitsync.ui.theme.DefaultAccent
 import com.example.fitsync.ui.theme.FitSyncTheme
+import com.example.fitsync.ui.theme.LocalAccentColor
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -44,9 +46,13 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val isDarkMode by settingsViewModel.isDarkMode.collectAsState()
 
-            FitSyncTheme(darkTheme = isDarkMode, dynamicColor = false) {
-                // 2. Pass it into the container
-                FitSyncAppContainer(settingsViewModel)
+            val accentColorInt by settingsViewModel.accentColor.collectAsState(initial = DefaultAccent.toArgb())
+            val currentAccent = Color(accentColorInt)
+
+            CompositionLocalProvider(LocalAccentColor provides currentAccent) {
+                FitSyncTheme(darkTheme = isDarkMode, dynamicColor = false) {
+                    FitSyncAppContainer(settingsViewModel)
+                }
             }
         }
     }
@@ -132,8 +138,9 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
 
 @Composable
 fun navItemColors() = NavigationBarItemDefaults.colors(
-    selectedIconColor = AccentRed,
-    selectedTextColor = AccentRed,
+    // Grab the dynamic color from your custom theme engine
+    selectedIconColor = LocalAccentColor.current,
+    selectedTextColor = LocalAccentColor.current,
     unselectedIconColor = Color.Gray,
     unselectedTextColor = Color.Gray,
     indicatorColor = Color.Transparent

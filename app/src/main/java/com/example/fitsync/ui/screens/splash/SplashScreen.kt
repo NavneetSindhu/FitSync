@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fitsync.ui.theme.AccentRed
+import com.example.fitsync.ui.theme.LocalAccentColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -63,7 +63,7 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.FitnessCenter,
                 contentDescription = null,
-                tint = AccentRed,
+                tint = LocalAccentColor.current,
                 modifier = Modifier.size(100.dp)
             )
             Spacer(Modifier.height(16.dp))

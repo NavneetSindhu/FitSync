@@ -47,4 +47,14 @@ class PreferenceManager @Inject constructor(
     fun saveBinId(id: String) {
         sharedPreferences.edit().putString("json_bin_id", id).apply()
     }
+
+    fun getAccentColor(defaultColor: Int): Int {
+        // Replace with your actual SharedPreferences / DataStore fetch logic
+        return sharedPreferences.getInt("app_accent_color", defaultColor)
+    }
+
+    fun setAccentColor(colorInt: Int) {
+        // Replace with your actual SharedPreferences / DataStore save logic
+        sharedPreferences.edit().putInt("app_accent_color", colorInt).apply()
+    }
 }

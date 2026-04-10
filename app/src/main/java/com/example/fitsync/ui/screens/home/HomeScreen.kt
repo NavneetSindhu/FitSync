@@ -94,7 +94,7 @@ fun HomeScreen(
                         if (targetPage == 0) showCreateWorkoutSheet = true
                         else showAddExerciseSheet = true
                     },
-                    containerColor = AccentRed,
+                    containerColor = LocalAccentColor.current,
                     contentColor = Color.White,
                     shape = CircleShape,
                     modifier = Modifier.padding(bottom = 8.dp),

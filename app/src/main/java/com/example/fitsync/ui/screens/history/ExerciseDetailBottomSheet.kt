@@ -10,11 +10,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitsync.domain.model.Exercise
-import com.example.fitsync.ui.theme.AccentRed
 import co.yml.charts.axis.AxisData
 import co.yml.charts.common.model.Point
 import co.yml.charts.ui.linechart.LineChart
 import co.yml.charts.ui.linechart.model.*
+import com.example.fitsync.ui.theme.LocalAccentColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,13 +58,13 @@ fun ExerciseDetailBottomSheet(
             lines = listOf(
                 Line(
                     dataPoints = points,
-                    lineStyle = LineStyle(color = AccentRed, width = 3f),
-                    intersectionPoint = IntersectionPoint(color = AccentRed, radius = 4.dp),
-                    selectionHighlightPoint = SelectionHighlightPoint(color = AccentRed),
+                    lineStyle = LineStyle(color = LocalAccentColor.current, width = 3f),
+                    intersectionPoint = IntersectionPoint(color = LocalAccentColor.current, radius = 4.dp),
+                    selectionHighlightPoint = SelectionHighlightPoint(color = LocalAccentColor.current),
                     shadowUnderLine = ShadowUnderLine(
                         alpha = 0.1f,
                         brush = Brush.verticalGradient(
-                            listOf(AccentRed, Color.Transparent)
+                            listOf(LocalAccentColor.current, Color.Transparent)
                         )
                     )
                 )

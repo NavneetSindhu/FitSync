@@ -2,6 +2,7 @@ package com.example.fitsync.ui.screens.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,7 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -33,8 +36,12 @@ fun SettingsScreen(
     val isMetric by viewModel.isMetric.collectAsState()
     val isDarkMode by viewModel.isDarkMode.collectAsState()
 
+    // Grab the current accent color from our CompositionLocal
+    val currentAccentColor = LocalAccentColor.current
+
     var showEditDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -136,6 +143,50 @@ fun SettingsScreen(
             // --- 2. PREFERENCES SECTION ---
             item {
                 SettingsSection(title = "App Preferences") {
+
+                    // --- NEW: Accent Color Picker Row ---
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showColorPicker = true }
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                Modifier.size(36.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Palette,
+                                    null,
+                                    Modifier.padding(8.dp),
+                                    tint = currentAccentColor
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "App Accent Color",
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(currentAccentColor, CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                        )
+                    }
+
+                    HorizontalDivider(
+                        Modifier.padding(horizontal = 16.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
                     // Dark Mode Toggle
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -259,7 +310,19 @@ fun SettingsScreen(
         }
     }
 
-    // --- DIALOGS (Inherit Theme automatically) ---
+    // --- DIALOGS ---
+
+    if (showColorPicker) {
+        ColorPickerDialog(
+            initialColor = currentAccentColor,
+            onDismiss = { showColorPicker = false },
+            onColorSelected = { newColor ->
+                viewModel.updateAccentColor(newColor.toArgb())
+                showColorPicker = false
+            }
+        )
+    }
+
     if (showEditDialog) {
         EditProfileDialog(
             currentName = name,
@@ -438,4 +501,127 @@ fun EditProfileDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp)
     )
+}
+
+// --- NEW COLOR PICKER COMPONENTS ---
+
+@Composable
+fun ColorPickerDialog(
+    initialColor: Color,
+    onDismiss: () -> Unit,
+    onColorSelected: (Color) -> Unit
+) {
+    var selectedColor by remember { mutableStateOf(initialColor) }
+
+    // RGB Sliders state
+    var red by remember { mutableFloatStateOf(initialColor.red) }
+    var green by remember { mutableFloatStateOf(initialColor.green) }
+    var blue by remember { mutableFloatStateOf(initialColor.blue) }
+
+    // Pre-defined modern fitness palette
+    val presets = listOf(
+        Color(0xFFE53935), // Fit Red
+        Color(0xFF0D6890), // Deep Aqua (Original)
+        Color(0xFF43A047), // Energetic Green
+        Color(0xFF8E24AA), // Royal Purple
+        Color(0xFFFFB300)  // Warning/Amber
+    )
+
+    // Update main color when sliders move
+    LaunchedEffect(red, green, blue) {
+        selectedColor = Color(red, green, blue)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Customize Theme", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                // Color Preview Box
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .background(selectedColor, RoundedCornerShape(12.dp))
+                )
+
+                Text("Presets", style = MaterialTheme.typography.labelMedium)
+
+                // Preset Color Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    presets.forEach { color ->
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .clickable {
+                                    // Update sliders when preset is clicked
+                                    red = color.red
+                                    green = color.green
+                                    blue = color.blue
+                                }
+                                .border(
+                                    width = if (selectedColor == color) 3.dp else 0.dp,
+                                    color = if (selectedColor == color) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Text("Custom Color", style = MaterialTheme.typography.labelMedium)
+
+                // Custom RGB Sliders
+                Column {
+                    ColorSlider("Red", red, Color.Red) { red = it }
+                    ColorSlider("Green", green, Color.Green) { green = it }
+                    ColorSlider("Blue", blue, Color.Blue) { blue = it }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onColorSelected(selectedColor) },
+                colors = ButtonDefaults.buttonColors(containerColor = selectedColor)
+            ) {
+                Text("Apply Color", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+}
+
+@Composable
+fun ColorSlider(
+    label: String,
+    value: Float,
+    activeColor: Color,
+    onValueChange: (Float) -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label.take(1), modifier = Modifier.width(20.dp), fontWeight = FontWeight.Bold)
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = 0f..1f,
+            colors = SliderDefaults.colors(
+                thumbColor = activeColor,
+                activeTrackColor = activeColor.copy(alpha = 0.7f)
+            ),
+            modifier = Modifier.weight(1f)
+        )
+    }
 }

@@ -189,7 +189,7 @@ fun SyncScreen(viewModel: SyncViewModel = hiltViewModel()) {
                         Text("Pending Uploads", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = "${stats.pendingCount}",
-                            color = if (stats.pendingCount > 0) AccentRed else MaterialTheme.colorScheme.primary,
+                            color = if (stats.pendingCount > 0) LocalAccentColor.current else MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                     }

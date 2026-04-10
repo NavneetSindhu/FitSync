@@ -59,7 +59,7 @@ fun ExerciseCarouselItem(
                     painter = painterResource(id = meta.iconRes),
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
-                    // Tints the PNG white when selected, or AccentRed when unselected
+                    // Tints the PNG white when selected, or LocalAccentColor.current when unselected
                     colorFilter = ColorFilter.tint(contentColor)
                 )
 

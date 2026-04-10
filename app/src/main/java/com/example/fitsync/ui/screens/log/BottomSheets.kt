@@ -19,7 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fitsync.ui.components.ExerciseIcon
-import com.example.fitsync.ui.theme.AccentRed
+import com.example.fitsync.ui.theme.LocalAccentColor
 import kotlinx.coroutines.launch
 
 // Simple data class to hold exercise info
@@ -108,11 +108,11 @@ fun AddExerciseBottomSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 placeholder = { Text("Search any exercise...") },
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = AccentRed) },
+                leadingIcon = { Icon(Icons.Default.Search, null, tint = LocalAccentColor.current) },
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AccentRed,
+                    focusedBorderColor = LocalAccentColor.current,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
             )
@@ -135,7 +135,7 @@ fun AddExerciseBottomSheet(
                         label = { Text(category, fontWeight = FontWeight.Bold) },
                         shape = CircleShape,
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AccentRed,
+                            selectedContainerColor = LocalAccentColor.current,
                             selectedLabelColor = Color.White,
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ),
@@ -262,7 +262,7 @@ fun CreateWorkoutBottomSheet(
                         label = { Text(option) },
                         shape = RoundedCornerShape(12.dp),
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = AccentRed,
+                            selectedContainerColor = LocalAccentColor.current,
                             selectedLabelColor = Color.White
                         )
                     )
@@ -279,7 +279,7 @@ fun CreateWorkoutBottomSheet(
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentRed
+                        focusedBorderColor = LocalAccentColor.current
                     )
                 )
             } else {
@@ -292,7 +292,7 @@ fun CreateWorkoutBottomSheet(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(Modifier.size(8.dp).background(AccentRed, CircleShape))
+                        Box(Modifier.size(8.dp).background(LocalAccentColor.current, CircleShape))
                         Spacer(Modifier.width(12.dp))
                         Text(
                             "You are starting a $selectedOption session.",
@@ -311,7 +311,7 @@ fun CreateWorkoutBottomSheet(
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentRed
+                    containerColor = LocalAccentColor.current
                 ),
                 elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {
