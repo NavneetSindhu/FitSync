@@ -3,6 +3,7 @@ package com.example.fitsync.domain.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
+import java.time.LocalDate
 
 @Serializable
 data class WorkoutSet(
@@ -27,3 +28,14 @@ data class WorkoutSession(
     val isSynced: Boolean = false
 )
 
+
+data class CalendarUiState(
+    val selectedDate: LocalDate = LocalDate.now(),
+    val workoutMap: Map<LocalDate, WorkoutSummary> = emptyMap()
+)
+
+data class WorkoutSummary(
+    val intensity: Int,
+    val volume: String,
+    val sets: Int
+)

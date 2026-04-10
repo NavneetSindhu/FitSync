@@ -75,6 +75,7 @@ dependencies {
 
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("com.google.android.material:material:1.11.0")
+    implementation("com.kizitonwose.calendar:compose:2.7.0")
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
