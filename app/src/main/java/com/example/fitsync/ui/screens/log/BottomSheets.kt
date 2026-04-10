@@ -2,9 +2,9 @@ package com.example.fitsync.ui.screens.log
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,12 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fitsync.ui.components.ExerciseIcon
 import com.example.fitsync.ui.theme.AccentRed
-import com.example.fitsync.ui.theme.ExerciseVisuals
 import kotlinx.coroutines.launch
+
+// Simple data class to hold exercise info
+data class ExerciseDef(val name: String, val category: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,12 +33,49 @@ fun AddExerciseBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    var searchQuery by remember { mutableStateOf("") }
 
-    val exercises = listOf(
-        "Barbell Squat", "Bench Press", "Deadlift", "Overhead Press",
-        "Pull Ups", "Barbell Row", "Dips", "Push Ups", "Lunges"
-    ).filter { it.contains(searchQuery, ignoreCase = true) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("All") }
+
+    val categories = listOf("All", "Push", "Pull", "Legs", "Core", "Cardio", "Calisthenics")
+
+    // Expanded exercise database mapped to categories
+    val allExercises = remember {
+        listOf(
+            // Push
+            ExerciseDef("Bench Press", "Push"), ExerciseDef("Overhead Press", "Push"),
+            ExerciseDef("Push Ups", "Push"), ExerciseDef("Dips", "Push"),
+            ExerciseDef("Incline DB Press", "Push"), ExerciseDef("Tricep Extension", "Push"),
+            // Pull
+            ExerciseDef("Deadlift", "Pull"), ExerciseDef("Pull Ups", "Pull"),
+            ExerciseDef("Barbell Row", "Pull"), ExerciseDef("Lat Pulldown", "Pull"),
+            ExerciseDef("Bicep Curl", "Pull"), ExerciseDef("Face Pulls", "Pull"),
+            // Legs
+            ExerciseDef("Barbell Squat", "Legs"), ExerciseDef("Leg Press", "Legs"),
+            ExerciseDef("Romanian Deadlift", "Legs"), ExerciseDef("Lunges", "Legs"),
+            ExerciseDef("Calf Raises", "Legs"), ExerciseDef("Bulgarian Split Squat", "Legs"),
+            // Core
+            ExerciseDef("Plank", "Core"), ExerciseDef("Cable Crunches", "Core"),
+            ExerciseDef("Hanging Leg Raises", "Core"), ExerciseDef("Russian Twists", "Core"),
+            // Cardio
+            ExerciseDef("Treadmill Running", "Cardio"), ExerciseDef("Rowing Machine", "Cardio"),
+            ExerciseDef("Jump Rope", "Cardio"), ExerciseDef("Cycling", "Cardio"),
+            // Calisthenics
+            ExerciseDef("Muscle Ups", "Calisthenics"), ExerciseDef("Front Lever", "Calisthenics"),
+            ExerciseDef("Handstand Pushup", "Calisthenics"), ExerciseDef("Pistol Squat", "Calisthenics")
+        ).sortedBy { it.name }
+    }
+
+    // Logic: If search is active, ignore categories and search ALL. Otherwise, filter by category.
+    val filteredExercises = remember(searchQuery, selectedCategory) {
+        allExercises.filter { exercise ->
+            if (searchQuery.isNotBlank()) {
+                exercise.name.contains(searchQuery, ignoreCase = true)
+            } else {
+                selectedCategory == "All" || exercise.category == selectedCategory
+            }
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -46,24 +86,28 @@ fun AddExerciseBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .padding(horizontal = 20.dp)
+                .fillMaxHeight(0.85f) // Keeps it tall for easy scrolling
                 .navigationBarsPadding()
         ) {
+            // Header
             Text(
-                "Select Exercise",
+                text = "Select Exercise",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 20.dp)
             )
 
             Spacer(Modifier.height(16.dp))
 
+            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search by muscle or name...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                placeholder = { Text("Search any exercise...") },
                 leadingIcon = { Icon(Icons.Default.Search, null, tint = AccentRed) },
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
@@ -73,52 +117,110 @@ fun AddExerciseBottomSheet(
                 )
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
+            // Category Filter Chips (Scrollable Horizontally)
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(exercises) { name ->
+                items(categories) { category ->
+                    FilterChip(
+                        selected = selectedCategory == category,
+                        onClick = {
+                            selectedCategory = category
+                            searchQuery = "" // Clear search when picking a category
+                        },
+                        label = { Text(category, fontWeight = FontWeight.Bold) },
+                        shape = CircleShape,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = AccentRed,
+                            selectedLabelColor = Color.White,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                        border = null
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Exercise List (Rectangular Cards)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredExercises) { exercise ->
                     Surface(
                         onClick = {
-                            onAddExercise(name)
+                            onAddExercise(exercise.name)
                             scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
                         },
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Icon container
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ExerciseIcon(name = exercise.name, size = 32.dp)
+                            }
+
+                            Spacer(Modifier.width(16.dp))
+
+                            // Text Content
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = exercise.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = exercise.category,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Empty state if search yields nothing
+                if (filteredExercises.isEmpty()) {
+                    item {
                         Column(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 40.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // 🔥 UPDATED: Using the new ExerciseIcon (PNG + Tint logic)
-                            ExerciseIcon(
-                                name = name,
-                                size = 48.dp
-                            )
-
-                            Spacer(Modifier.height(12.dp))
-
-                            Text(
-                                text = name,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                maxLines = 1
-                            )
+                            Text("No exercises found 🕵️‍♂️", style = MaterialTheme.typography.titleMedium)
+                            Text("Try a different search term.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(24.dp))
         }
     }
 }
 
+// Keeping CreateWorkoutBottomSheet exactly as you had it below:
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CreateWorkoutBottomSheet(
