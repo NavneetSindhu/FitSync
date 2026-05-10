@@ -3,6 +3,8 @@ package com.example.fitsync.data.repository
 import android.util.Log
 import com.example.fitsync.data.local.dao.WorkoutDao
 import com.example.fitsync.data.remote.FitSyncApi
+import com.example.fitsync.data.remote.UserIdPayload
+import com.example.fitsync.data.remote.WorkoutSyncPayload
 import com.example.fitsync.domain.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -35,21 +37,56 @@ class WorkoutRepository @Inject constructor(
     }
 
     // 3. Save a single workout
-    suspend fun insert(workout: WorkoutSession, userId: Long) {
-        // Save locally first so the UI feels instantly fast
+    // We are temporarily hardcoding the userId to 1L for testing!
+    // We are temporarily hardcoding the userId to 1L for testing!
+    suspend fun insert(workout: WorkoutSession, userId: Long = 1L) {
+        // 1. Save locally first for instant speed.
+        // (Room handles the Lists because you are using @Serializable!)
         workoutDao.insertWorkout(workout)
 
-        // Try to push just this ONE workout to your POST /api/workouts endpoint
+        // 2. Try to sync to the Spring Boot server
         try {
-            // Note: Your workout model needs to include the user ID for the backend
-            // e.g., workout.user = User(id = userId) before sending
-            val savedRemote = api.syncWorkout(workout)
+            // --- NEW: Calculate the totals from your List<Exercise> ---
+            var calculatedVolume = 0.0
+            var calculatedSets = 0
 
-            // If successful, you could update the local DB to mark it as synced
-            // workoutDao.markAsSynced(savedRemote.id)
-            Log.d("Sync", "Successfully saved to Postgres!")
+            workout.exercise.forEach { ex ->
+                calculatedSets += ex.sets.size
+                ex.sets.forEach { set ->
+                    // Volume = Reps * Weight
+                    calculatedVolume += (set.reps * set.weight)
+                }
+            }
+
+            // --- NEW: Generate a dynamic title ---
+            // e.g., "Bench Press & 2 more exercises" or "Quick Session"
+            val dynamicTitle = if (workout.exercise.isNotEmpty()) {
+                val firstExercise = workout.exercise.first().name
+                val extraCount = workout.exercise.size - 1
+                if (extraCount > 0) "$firstExercise & $extraCount more" else firstExercise
+            } else {
+                "Quick Session"
+            }
+
+            // --- Translate to the Network Payload ---
+            val networkPayload = WorkoutSyncPayload(
+                dayTitle = dynamicTitle,
+                totalVolume = calculatedVolume,
+                totalSets = calculatedSets,
+                timestamp = workout.date,
+                user = UserIdPayload(id = userId)
+            )
+
+            // Send to the server
+            api.syncWorkout(networkPayload)
+            Log.d("WorkoutSync", "Workout successfully backed up to Postgres!")
+
+            // BONUS: Since you added 'isSynced' to your model, you could update Room here!
+            // workoutDao.updateSyncStatus(workout.id, true)
+
         } catch (e: Exception) {
-            Log.e("Sync", "Server unreachable, workout saved locally to sync later.")
+            // If the server is offline, the app stays alive and the data is safe in Room.
+            Log.e("WorkoutSync", "Server offline, saved locally. Error: ", e)
         }
     }
 

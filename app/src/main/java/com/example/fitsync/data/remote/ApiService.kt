@@ -15,8 +15,7 @@ interface FitSyncApi {
 
     // Matches your Spring Boot @PostMapping("/api/workouts")
     @POST("api/workouts")
-    suspend fun syncWorkout(@Body workout: WorkoutSession): WorkoutSession
-
+    suspend fun syncWorkout(@Body payload: WorkoutSyncPayload): WorkoutSyncPayload
     // --- Inside FitSyncApi.kt ---
 
     // Matches your Spring Boot @GetMapping("/api/chats/user/{userId}")

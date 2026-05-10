@@ -14,3 +14,13 @@ data class ChatSyncPayload(
 data class UserIdPayload(
     val id: Long
 )
+
+
+
+data class WorkoutSyncPayload(
+    val dayTitle: String,
+    val totalVolume: Double,
+    val totalSets: Int,
+    val timestamp: Long,
+    val user: UserIdPayload
+)
