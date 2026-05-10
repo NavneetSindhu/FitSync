@@ -1,5 +1,7 @@
 package com.example.fitsync.domain.model
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
@@ -29,7 +31,7 @@ data class WorkoutSession(
 )
 
 
-data class CalendarUiState(
+data class CalendarUiState @RequiresApi(Build.VERSION_CODES.O) constructor(
     val selectedDate: LocalDate = LocalDate.now(),
     val workoutMap: Map<LocalDate, WorkoutSummary> = emptyMap()
 )

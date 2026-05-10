@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -59,7 +60,7 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
     val currentDestination = navBackStackEntry?.destination
 
     val shouldShowBottomBar = currentDestination?.let { dest ->
-        !dest.hasRoute<Settings>() && !dest.hasRoute<Splash>()
+        !dest.hasRoute<Settings>() && !dest.hasRoute<Splash>() && !dest.hasRoute<Chat>()
     } ?: true
 
     Scaffold(
@@ -81,6 +82,19 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
                         selected = currentDestination?.hasRoute<Home>() == true,
                         onClick = {
                             navController.navigate(Home) {
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Chat, null) },
+                        label = { Text("Chat") },
+                        selected = currentDestination?.hasRoute<Chat>() == true,
+                        onClick = {
+                            navController.navigate(Chat) {
                                 popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
