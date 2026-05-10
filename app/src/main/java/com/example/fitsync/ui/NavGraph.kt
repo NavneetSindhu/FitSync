@@ -16,6 +16,7 @@ import com.example.fitsync.ui.screens.sync.SyncScreen
 import com.example.fitsync.ui.screens.settings.SettingsScreen
 import com.example.fitsync.ui.screens.settings.SettingsViewModel
 import com.example.fitsync.ui.screens.log.DailyLogViewModel // Added import
+import com.example.fitsync.ui.screens.profile.ProfileScreen
 import com.example.fitsync.ui.screens.splash.SplashScreen
 import kotlinx.serialization.Serializable
 
@@ -23,6 +24,8 @@ import kotlinx.serialization.Serializable
 @Serializable object DailyLog
 @Serializable object History
 @Serializable object Sync
+
+@Serializable object Profile
 @Serializable object Settings
 
 @Serializable object Chat
@@ -71,6 +74,10 @@ fun FitSyncNavGraph(
             HistoryScreen(
                 onBackClick = { navController.popBackStack() }
             )
+        }
+
+        composable<Profile> {
+            ProfileScreen()
         }
 
         composable<Sync> {

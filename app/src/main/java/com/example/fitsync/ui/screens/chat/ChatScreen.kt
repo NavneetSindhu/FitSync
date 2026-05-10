@@ -70,6 +70,9 @@ fun ChatScreen(
     }
 
     Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding(),
         topBar = { ChatHeader(userName, onBackClick,onClearChatClick = { viewModel.clearTodayChat() })},
         bottomBar = {
             ChatInputBar(
@@ -90,7 +93,8 @@ fun ChatScreen(
                 }
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0.dp)
     ) { paddingValues ->
         LazyColumn(
             state = listState,
@@ -98,7 +102,7 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
+            contentPadding = PaddingValues(bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(messages) { msg ->
@@ -427,8 +431,6 @@ fun ChatInputBar(
         shape = RoundedCornerShape(28.dp), // 1. Rounds the entire outer container
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding() // Keeps it clear of the system gesture bar
-            .imePadding() // 2. CRITICAL: Pushes the floating bar up when the keyboard opens!
             .padding(start = 16.dp, end = 16.dp, bottom = 16.dp) // 3. The safe margin floating effect
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

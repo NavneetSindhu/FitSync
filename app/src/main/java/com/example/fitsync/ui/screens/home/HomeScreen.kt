@@ -35,6 +35,10 @@ import com.example.fitsync.ui.theme.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+// The floating nav bar is approximately 80dp tall + 12dp vertical padding on each side = ~104dp total.
+// We use this constant to push scrollable content and FAB clear of the nav bar.
+private val FLOATING_NAV_HEIGHT = 104.dp
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -72,15 +76,27 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = onHistoryClick) {
-                        Icon(Icons.Default.History, "History", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.History,
+                            contentDescription = "History",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, "Settings", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
+        // FIX 1: FAB sits above the floating nav bar.
+        // bottomPadding = FLOATING_NAV_HEIGHT pushes FAB up so it clears the nav pill.
         floatingActionButton = {
             AnimatedContent(
                 targetState = pagerState.currentPage,
@@ -97,7 +113,9 @@ fun HomeScreen(
                     containerColor = AccentRed,
                     contentColor = Color.White,
                     shape = CircleShape,
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    // FIX 1: Push FAB above the floating nav bar instead of 8.dp.
+                    // FLOATING_NAV_HEIGHT accounts for the pill height + its vertical padding.
+                    modifier = Modifier.padding(bottom = FLOATING_NAV_HEIGHT),
                     icon = {
                         Icon(
                             imageVector = if (targetPage == 0) Icons.Default.PlayArrow else Icons.Default.Add,
@@ -105,7 +123,10 @@ fun HomeScreen(
                         )
                     },
                     text = {
-                        Text(if (targetPage == 0) "Start Workout" else "Add Exercise", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (targetPage == 0) "Start Workout" else "Add Exercise",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 )
             }
@@ -120,9 +141,7 @@ fun HomeScreen(
             PillTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 onTabSelected = { index ->
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(index)
-                    }
+                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
                 }
             )
 
@@ -137,7 +156,7 @@ fun HomeScreen(
                     1 -> LoggingScreen(
                         viewModel = viewModel,
                         uiState = uiState,
-                        onFinishWorkout = { }
+                        onFinishWorkout = {}
                     )
                 }
             }
@@ -156,7 +175,7 @@ fun HomeScreen(
         if (showCreateWorkoutSheet) {
             CreateWorkoutBottomSheet(
                 onDismiss = { showCreateWorkoutSheet = false },
-                onStartWorkout = { presetName, isCustom ->
+                onStartWorkout = { _, _ ->
                     showCreateWorkoutSheet = false
                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
                 }
@@ -180,11 +199,11 @@ fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
             tabs.forEachIndexed { index, title ->
                 val isSelected = selectedTabIndex == index
                 val bgColor by animateColorAsState(
-                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                     label = "TabBg"
                 )
                 val textColor by animateColorAsState(
-                    if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "TabTextColor"
                 )
 
@@ -211,10 +230,8 @@ fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
 
 @Composable
 fun StatsTabContent(userName: String) {
-    // 1. State Hoisting (Normally this lives in the ViewModel)
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
 
-    // Mock Data for the Map
     val mockWorkoutMap = remember {
         val map = mutableMapOf<LocalDate, WorkoutSummary>()
         map[LocalDate.now().minusDays(1)] = WorkoutSummary(3, "14.2k", 48)
@@ -224,7 +241,12 @@ fun StatsTabContent(userName: String) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 120.dp, top = 16.dp)
+        // FIX 2: Bottom padding = floating nav bar height so last item is never hidden under the pill.
+        // 120.dp original → replaced with FLOATING_NAV_HEIGHT (104.dp) + extra 16.dp breathing room.
+        contentPadding = PaddingValues(
+            top = 16.dp,
+            bottom = FLOATING_NAV_HEIGHT + 16.dp
+        )
     ) {
         item {
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
@@ -237,8 +259,18 @@ fun StatsTabContent(userName: String) {
                 Spacer(Modifier.height(16.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MiniStatCard("Volume", "12.4k", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-                    MiniStatCard("Sets", "42", SuccessGreen, Modifier.weight(1f))
+                    MiniStatCard(
+                        label = "Volume",
+                        value = "12.4k",
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    MiniStatCard(
+                        label = "Sets",
+                        value = "42",
+                        color = SuccessGreen,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
@@ -253,13 +285,10 @@ fun StatsTabContent(userName: String) {
                 selectedDate = selectedDate,
                 workoutMap = mockWorkoutMap,
                 onDateSelected = { selectedDate = it },
-                onMonthChanged = { newMonth ->
-                    // Trigger ViewModel to fetch new month data here
-                }
+                onMonthChanged = { /* Trigger ViewModel to fetch new month data */ }
             )
         }
 
-        // 2. Dynamic Details Card below the calendar
         item {
             val summary = mockWorkoutMap[selectedDate]
             val isFuture = selectedDate.isAfter(LocalDate.now())
@@ -269,20 +298,12 @@ fun StatsTabContent(userName: String) {
                 label = "DetailsCardAnimation"
             ) { (hasData, future, date) ->
                 when {
-                    hasData -> {
-                        WorkoutDetailsCard(date = date, summary = summary!!)
-                    }
-                    future -> {
-                        FutureDateCard(date = date)
-                    }
-                    else -> {
-                        EmptyPastWorkoutCard(
-                            date = date,
-                            onLogClick = {
-                                // Later: Open logging sheet with this date passed in
-                            }
-                        )
-                    }
+                    hasData -> WorkoutDetailsCard(date = date, summary = summary!!)
+                    future -> FutureDateCard(date = date)
+                    else -> EmptyPastWorkoutCard(
+                        date = date,
+                        onLogClick = { /* Open logging sheet with this date */ }
+                    )
                 }
             }
         }
@@ -295,12 +316,16 @@ fun WorkoutDetailsCard(date: LocalDate, summary: WorkoutSummary) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Workout on ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${date.dayOfMonth}",
+                text = "Workout on ${
+                    date.month.name.lowercase().replaceFirstChar { it.uppercase() }
+                } ${date.dayOfMonth}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -317,15 +342,15 @@ fun WorkoutDetailsCard(date: LocalDate, summary: WorkoutSummary) {
     }
 }
 
-// ... existing imports ...
-
 @Composable
 fun EmptyPastWorkoutCard(date: LocalDate, onLogClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
@@ -340,7 +365,9 @@ fun EmptyPastWorkoutCard(date: LocalDate, onLogClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "No workout logged on ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${date.dayOfMonth}.",
+                text = "No workout logged on ${
+                    date.month.name.lowercase().replaceFirstChar { it.uppercase() }
+                } ${date.dayOfMonth}.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -365,10 +392,7 @@ fun FutureDateCard(date: LocalDate) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "📅",
-                fontSize = 24.sp
-            )
+            Text(text = "📅", fontSize = 24.sp)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Future Date",
