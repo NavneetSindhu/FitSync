@@ -1,7 +1,14 @@
 package com.example.fitsync.ui.screens.chat
 
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,51 +25,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.fitsync.R // Replace with your actual R class
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.fitsync.domain.model.chat.ChatMessage
+import com.example.fitsync.domain.model.chat.Macros
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
-// --- Data Models ---
-data class Macros(val calories: Int, val protein: Int, val carbs: Int, val fat: Int)
-
-data class ChatMessage(
-    val id: String,
-    val text: String,
-    val isUser: Boolean,
-    val isAnalysis: Boolean = false,
-    val mealName: String? = null,
-    val macros: Macros? = null,
-    val imageRes: Int? = null // Using drawable for mock, replace with URI/Bitmap later
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
     userName: String = "Navneet",
+    viewModel: ChatViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {}
 ) {
-    // Mock Data for the UI
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val context = LocalContext.current
 
-    val messages = remember {
-        mutableStateListOf(
-            ChatMessage("1", "Hi $userName! I'm Sync AI. Ready to analyze your meals?", isUser = false),
-            ChatMessage("2", "Here is my lunch!", isUser = true, imageRes = android.R.drawable.ic_menu_camera), // Placeholder
-            ChatMessage(
-                id = "3",
-                text = "Great choice! Here is the breakdown.",
-                isUser = false,
-                isAnalysis = true,
-                mealName = "Chicken Quinoa Bowl",
-                macros = Macros(450, 35, 25, 15)
-            )
-        )
+    val messages by viewModel.messages.collectAsState()
+    val isTyping by viewModel.isTyping.collectAsState()
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = ImageDecoder.createSource(context.contentResolver, it)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+            }
+            viewModel.analyzeMealImage(bitmap)
+        }
     }
 
     Scaffold(
@@ -71,9 +71,10 @@ fun ChatScreen(
             ChatInputBar(
                 text = messageText,
                 onTextChange = { messageText = it },
+                onImageClick = { imagePickerLauncher.launch("image/*") },
                 onSend = {
                     if (messageText.isNotBlank()) {
-                        messages.add(ChatMessage(System.currentTimeMillis().toString(), messageText, isUser = true))
+                        viewModel.sendTextMessage(messageText)
                         messageText = ""
                     }
                 }
@@ -94,14 +95,23 @@ fun ChatScreen(
                 if (msg.isUser) {
                     UserMessageBubble(msg)
                 } else {
-                    BotMessageBubble(msg)
+                    BotMessageBubble(
+                        message = msg,
+                        onActionClick = { actionText ->
+                            // When a pill is clicked, send it as a message!
+                            viewModel.sendTextMessage(actionText)
+                        }
+                    )
                 }
+            }
+
+            if (isTyping) {
+                item { TypingIndicator() }
             }
         }
 
-        // Auto-scroll to bottom on new message
-        LaunchedEffect(messages.size) {
-            listState.animateScrollToItem(messages.size - 1)
+        LaunchedEffect(messages.size, isTyping) {
+            listState.animateScrollToItem(listState.layoutInfo.totalItemsCount)
         }
     }
 }
@@ -147,7 +157,6 @@ fun ChatHeader(userName: String, onBackClick: () -> Unit) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
-            // Welcome Banner
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -173,23 +182,24 @@ fun UserMessageBubble(message: ChatMessage) {
         horizontalArrangement = Arrangement.End
     ) {
         Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth(0.8f)) {
-            if (message.imageRes != null) {
-                // Image Bubble
+            if (message.imageBitmap != null) {
                 Surface(
                     shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp)
                 ) {
-                    Box(modifier = Modifier.size(200.dp).background(Color.LightGray)) {
-                        Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.align(Alignment.Center), tint = Color.Gray)
-                        // TODO: Replace with AsyncImage when using actual URIs
-                    }
+                    Image(
+                        bitmap = message.imageBitmap.asImageBitmap(),
+                        contentDescription = "User Meal",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(200.dp)
+                    )
                 }
             }
+
             if (message.text.isNotBlank()) {
                 Surface(
                     shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
-                    // Use your LocalAccentColor.current here if you set it up!
                     color = MaterialTheme.colorScheme.primary
                 ) {
                     Text(
@@ -205,7 +215,7 @@ fun UserMessageBubble(message: ChatMessage) {
 }
 
 @Composable
-fun BotMessageBubble(message: ChatMessage) {
+fun BotMessageBubble(message: ChatMessage, onActionClick: (String) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start,
@@ -227,7 +237,16 @@ fun BotMessageBubble(message: ChatMessage) {
 
         Column(modifier = Modifier.fillMaxWidth(0.85f)) {
             if (message.isAnalysis && message.macros != null) {
-                MealAnalysisCard(message.mealName ?: "Unknown Meal", message.macros)
+                // Pass the whole Macros object to the card
+                MealAnalysisCard(macros = message.macros)
+
+                // --- ACTION PILLS FOR FOOD ---
+                Spacer(Modifier.height(8.dp))
+                ActionPillsRow(
+                    actions = listOf("Log this meal", "Suggest a lighter dinner"),
+                    onClick = onActionClick
+                )
+
             } else {
                 Surface(
                     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
@@ -240,13 +259,49 @@ fun BotMessageBubble(message: ChatMessage) {
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
+
+                // --- ACTION PILLS FOR NON-FOOD OR REGULAR TEXT ---
+                // We only show these if the message contains the non-food warning
+                if (message.text.contains("don't see any food", ignoreCase = true)) {
+                    Spacer(Modifier.height(8.dp))
+                    ActionPillsRow(
+                        actions = listOf("Try taking a new photo", "Enter macros manually"),
+                        onClick = onActionClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ActionPillsRow(actions: List<String>, onClick: (String) -> Unit) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        actions.forEach { action ->
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.clickable { onClick(action) }
+            ) {
+                Text(
+                    text = action,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-fun MealAnalysisCard(mealName: String, macros: Macros) {
+fun MealAnalysisCard(macros: Macros) {
     Card(
         shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -256,29 +311,28 @@ fun MealAnalysisCard(mealName: String, macros: Macros) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(mealName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(macros.mealName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
-            Spacer(Modifier.height(12.dp))
+            // --- DISPLAY ESTIMATED QUANTITY ---
+            Text(
+                text = "Portion: ${macros.estimatedQuantity}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+            )
+
+            Spacer(Modifier.height(4.dp))
 
             Text("🔥 ${macros.calories} kcal", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
 
             Spacer(Modifier.height(16.dp))
 
-            // Macro Bars
             MacroRow("Protein", macros.protein, 50, Color(0xFFE53935))
             Spacer(Modifier.height(8.dp))
             MacroRow("Carbs", macros.carbs, 50, Color(0xFF1E88E5))
             Spacer(Modifier.height(8.dp))
             MacroRow("Fat", macros.fat, 30, Color(0xFFFFB300))
-
-            Spacer(Modifier.height(16.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(Modifier.height(12.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⭐️ Good Choice!", color = Color(0xFF43A047), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
-            }
         }
     }
 }
@@ -300,9 +354,19 @@ fun MacroRow(label: String, amount: Int, dailyTarget: Int, color: Color) {
 }
 
 @Composable
+fun TypingIndicator() {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(8.dp)) {
+        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(8.dp))
+        Text("Sync AI is thinking...", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
 fun ChatInputBar(
     text: String,
     onTextChange: (String) -> Unit,
+    onImageClick: () -> Unit,
     onSend: () -> Unit
 ) {
     Surface(
@@ -316,10 +380,7 @@ fun ChatInputBar(
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = { /* Open Camera */ }) {
-                Icon(Icons.Default.CameraAlt, contentDescription = "Camera", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            IconButton(onClick = { /* Open Gallery */ }) {
+            IconButton(onClick = onImageClick) {
                 Icon(Icons.Default.PhotoLibrary, contentDescription = "Gallery", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
@@ -354,7 +415,7 @@ fun ChatInputBar(
                     Icons.AutoMirrored.Filled.Send,
                     contentDescription = "Send",
                     tint = if (text.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp) // Optical center tweak
+                    modifier = Modifier.padding(start = 4.dp)
                 )
             }
         }

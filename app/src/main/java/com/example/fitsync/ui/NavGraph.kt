@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.example.fitsync.ui.screens.chat.ChatScreen
+import com.example.fitsync.ui.screens.chat.ChatViewModel
 import com.example.fitsync.ui.screens.history.HistoryScreen
 import com.example.fitsync.ui.screens.home.HomeScreen
 import com.example.fitsync.ui.screens.log.LoggingScreen
@@ -77,8 +78,12 @@ fun FitSyncNavGraph(
         }
 
         composable<Chat> {
+            val chatViewModel: ChatViewModel = hiltViewModel()
+
             ChatScreen(
-                onBackClick = {navController.popBackStack()}
+                onBackClick = {navController.popBackStack()},
+                viewModel = chatViewModel
+
             )
         }
 

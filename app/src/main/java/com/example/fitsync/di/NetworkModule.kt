@@ -1,5 +1,6 @@
 package com.example.fitsync.di
 
+import com.example.fitsync.data.remote.GeminiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,6 +16,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    @Provides
+    @Singleton
+    fun provideGeminiService(): GeminiService {
+        return GeminiService() // Hilt will call this whenever a ViewModel asks for GeminiService
+    }
 
     @Provides
     @Singleton

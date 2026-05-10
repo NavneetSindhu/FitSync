@@ -17,6 +17,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        val geminiApiKey = project.findProperty("GEMINI_API_KEY") as? String ?: ""
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,6 +41,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -73,6 +76,13 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // Gemini
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    // Ktor
+    val ktor_version = "2.3.11"
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-okhttp:$ktor_version")
+
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("com.kizitonwose.calendar:compose:2.7.0")
@@ -92,4 +102,14 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            if (requested.group.startsWith("io.ktor")) {
+                useVersion("2.3.11")
+            }
+        }
+    }
 }
