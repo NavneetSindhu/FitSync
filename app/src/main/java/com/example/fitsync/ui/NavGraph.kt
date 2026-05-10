@@ -12,7 +12,6 @@ import com.example.fitsync.ui.screens.chat.ChatViewModel
 import com.example.fitsync.ui.screens.history.HistoryScreen
 import com.example.fitsync.ui.screens.home.HomeScreen
 import com.example.fitsync.ui.screens.log.LoggingScreen
-import com.example.fitsync.ui.screens.sync.SyncScreen
 import com.example.fitsync.ui.screens.settings.SettingsScreen
 import com.example.fitsync.ui.screens.settings.SettingsViewModel
 import com.example.fitsync.ui.screens.log.DailyLogViewModel // Added import
@@ -78,10 +77,6 @@ fun FitSyncNavGraph(
 
         composable<Profile> {
             ProfileScreen()
-        }
-
-        composable<Sync> {
-            SyncScreen()
         }
 
         composable<Chat> {

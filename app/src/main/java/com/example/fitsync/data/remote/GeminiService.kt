@@ -12,8 +12,8 @@ import kotlinx.serialization.json.Json
 class GeminiService {
 
     private val generativeModel = GenerativeModel(
-        modelName = "gemini-2.5-flash", // Note: 1.5-flash is the current stable multimodal model
-        apiKey = "AIzaSyATyKnH8xv7-NGLjz6xnVU5Kqh5o-5SZhg" // 🚨 REMEMBER TO CHANGE TO BuildConfig.GEMINI_API_KEY 🚨
+        modelName = "gemini-2.5-flash",
+        apiKey = "AIzaSyCVcDYLICCR2opHOzFExQ0IA1WAOpqLFZA" // 🚨 REMEMBER TO CHANGE TO BuildConfig.GEMINI_API_KEY 🚨
     )
 
     private val jsonParser = Json { ignoreUnknownKeys = true }

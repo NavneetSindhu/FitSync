@@ -26,12 +26,11 @@ class DailyLogViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DailyLogUiState())
     val uiState: StateFlow<DailyLogUiState> = _uiState.asStateFlow()
 
-    private val _userId = MutableStateFlow("FIT-GUEST")
-    val userId: StateFlow<String> = _userId.asStateFlow()
+    private val _userId = MutableStateFlow(1L)
+    val userId: StateFlow<Long> = _userId.asStateFlow()
 
     init {
         // Generating a unique ID for cloud syncing.
-        _userId.value = "FIT-" + UUID.randomUUID().toString().take(8).uppercase()
         loadTodayWorkout()
     }
 

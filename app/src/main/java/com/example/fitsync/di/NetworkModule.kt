@@ -1,5 +1,6 @@
 package com.example.fitsync.di
 
+import com.example.fitsync.data.remote.FitSyncApi // Make sure this matches your package!
 import com.example.fitsync.data.remote.GeminiService
 import dagger.Module
 import dagger.Provides
@@ -11,6 +12,8 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
@@ -20,22 +23,28 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideGeminiService(): GeminiService {
-        return GeminiService() // Hilt will call this whenever a ViewModel asks for GeminiService
+        return GeminiService()
+    }
+
+
+
+    // --- NEW: Spring Boot & Retrofit Configuration ---
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            // 10.0.2.2 points the Android Emulator to your computer's localhost
+            // VERY IMPORTANT: Retrofit base URLs must end with a trailing slash "/"
+            .baseUrl("http://10.0.2.2:8081/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
 
     @Provides
     @Singleton
-    fun provideHttpClient(): HttpClient {
-        return HttpClient(OkHttp) {
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    prettyPrint = true
-                })
-            }
-            install(Logging) {
-                level = LogLevel.BODY
-            }
-        }
+    fun provideFitSyncApi(retrofit: Retrofit): FitSyncApi {
+        // Hilt will automatically pass the Retrofit instance from the function above into here
+        return retrofit.create(FitSyncApi::class.java)
     }
 }

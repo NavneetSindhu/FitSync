@@ -106,7 +106,7 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(messages) { msg ->
-                if (msg.isUser) {
+                if (msg.sentByUser) {
                     UserMessageBubble(msg)
                 } else {
                     BotMessageBubble(

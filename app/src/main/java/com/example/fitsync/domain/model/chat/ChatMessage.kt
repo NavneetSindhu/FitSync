@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 data class ChatMessage(
     val id: String,
     val text: String,
-    val isUser: Boolean,
+    val sentByUser: Boolean,
     val isAnalysis: Boolean = false,
     val mealName: String? = null,
     val estimatedQuantity: String? = null, // <--- NEW

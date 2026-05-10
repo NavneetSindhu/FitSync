@@ -1,90 +1,29 @@
 package com.example.fitsync.data.remote
 
 import com.example.fitsync.domain.model.WorkoutSession
-import io.ktor.client.*
-import io.ktor.client.call.body
-import io.ktor.client.request.*
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.*
-import kotlinx.serialization.Serializable
-import javax.inject.Inject
-import javax.inject.Singleton
+import com.example.fitsync.domain.model.chat.ChatMessage
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Path
 
-// --- MODELS FOR JSONBIN.IO ---
-@Serializable
-data class BinResponse(val metadata: BinMetadata)
+interface FitSyncApi {
 
-@Serializable
-data class BinMetadata(val id: String)
+    // Matches your Spring Boot @GetMapping("/api/workouts/user/{userId}")
+    @GET("api/workouts/user/{userId}")
+    suspend fun getUserWorkouts(@Path("userId") userId: Long): List<WorkoutSession>
 
-@Serializable
-data class SyncPayload(
-    val lastUpdated: Long,
-    val workouts: List<WorkoutSession>
-)
+    // Matches your Spring Boot @PostMapping("/api/workouts")
+    @POST("api/workouts")
+    suspend fun syncWorkout(@Body workout: WorkoutSession): WorkoutSession
 
-@Singleton
-class ApiService @Inject constructor(private val client: HttpClient) {
+    // --- Inside FitSyncApi.kt ---
 
-    private val MASTER_KEY = "$2a$10$5T1FIv9KUG.xChBIT8fVpeOrwh1TtAtCh8UobVDCLt.KBQ2Znddqa"
-    private val BASE_URL = "https://api.jsonbin.io/v3/b"
+    // Matches your Spring Boot @GetMapping("/api/chats/user/{userId}")
+    @GET("api/chats/user/{userId}")
+    suspend fun getUserChats(@Path("userId") userId: Long): List<ChatMessage>
 
-    /**
-     * 1. CREATE: Use this once to get a random hex ID from JSONBin.
-     */
-    suspend fun createJournal(allWorkouts: List<WorkoutSession>): String? {
-        return try {
-            val response: HttpResponse = client.post(BASE_URL) {
-                header("X-Master-Key", MASTER_KEY)
-                contentType(ContentType.Application.Json)
-                setBody(SyncPayload(System.currentTimeMillis(), allWorkouts))
-            }
-
-            if (response.status.isSuccess()) {
-                val body: BinResponse = response.body()
-                println("🚀 Success! Generated Bin ID: ${body.metadata.id}")
-                body.metadata.id
-            } else {
-                println("⚠️ Creation Failed: ${response.status}")
-                null
-            }
-        } catch (e: Exception) {
-            println("⚠️ Network Error: ${e.message}")
-            null
-        }
-    }
-
-    /**
-     * 2. UPDATE: Use this for all future syncs using the generated Hex ID.
-     */
-    suspend fun updateJournal(binId: String, allWorkouts: List<WorkoutSession>): Boolean {
-        if (binId.isBlank()) return false
-        return try {
-            val response: HttpResponse = client.put("$BASE_URL/$binId") {
-                header("X-Master-Key", MASTER_KEY)
-                header("X-Bin-Versioning", "false")
-                contentType(ContentType.Application.Json)
-                setBody(SyncPayload(System.currentTimeMillis(), allWorkouts))
-            }
-            response.status.isSuccess()
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    /**
-     * 3. DELETE: Permanently wipes the bin from JSONBin.io.
-     */
-    suspend fun deleteUserJournal(binId: String): Boolean {
-        if (binId.isBlank()) return false
-        return try {
-            val response = client.delete("$BASE_URL/$binId") {
-                header("X-Master-Key", MASTER_KEY)
-            }
-            response.status.isSuccess()
-        } catch (e: Exception) {
-            println("⚠️ Delete Error: ${e.message}")
-            false
-        }
-    }
+    // Matches your Spring Boot @PostMapping("/api/chats")
+    @POST("api/chats")
+    suspend fun syncChatMessage(@Body payload: ChatSyncPayload): ChatSyncPayload
 }

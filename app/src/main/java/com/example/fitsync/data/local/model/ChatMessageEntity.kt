@@ -29,7 +29,7 @@ data class ChatMessageEntity(
         return ChatMessage(
             id = id,
             text = text,
-            isUser = isUser,
+            sentByUser = isUser,
             isAnalysis = isAnalysis,
             mealName = mealName,
             estimatedQuantity = estimatedQuantity,
@@ -45,7 +45,7 @@ fun ChatMessage.toEntity(dateString: String): ChatMessageEntity {
     return ChatMessageEntity(
         id = this.id,
         text = this.text,
-        isUser = this.isUser,
+        isUser = this.sentByUser,
         isAnalysis = this.isAnalysis,
         mealName = this.mealName,
         estimatedQuantity = this.estimatedQuantity,

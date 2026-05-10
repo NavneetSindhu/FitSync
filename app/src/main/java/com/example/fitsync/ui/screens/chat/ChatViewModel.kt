@@ -1,15 +1,15 @@
 package com.example.fitsync.ui.screens.chat
 
-import android.content.Context // NEW: Required for Context
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fitsync.data.local.ImageStorageHelper // NEW: Import your helper
+import com.example.fitsync.data.local.ImageStorageHelper
 import com.example.fitsync.data.remote.GeminiService
 import com.example.fitsync.data.repository.ChatRepository
 import com.example.fitsync.domain.model.chat.ChatMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext // NEW: Required for Hilt injection
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,10 +27,15 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val geminiService: GeminiService,
     private val chatRepository: ChatRepository,
-    @ApplicationContext private val context: Context // NEW: Safely inject the app context
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val todayDateString = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+    // --- NEW: The Current User ID ---
+    // For now, we hardcode this to match the PostgreSQL user we created.
+    // TODO: Later, fetch this from DataStore or AuthRepository when a user logs in.
+    private val currentUserId = 1L
 
     val messages: StateFlow<List<ChatMessage>> = chatRepository.getMessagesForToday(todayDateString)
         .stateIn(
@@ -43,7 +48,11 @@ class ChatViewModel @Inject constructor(
     val isTyping: StateFlow<Boolean> = _isTyping.asStateFlow()
 
     init {
-        // Optional: Ensure welcome message is there if needed
+        // --- NEW: Sync on Startup ---
+        // Fetch history from Spring Boot when the screen opens
+        viewModelScope.launch {
+            chatRepository.fetchChatsFromServer(currentUserId)
+        }
     }
 
     fun sendTextMessage(text: String) {
@@ -52,11 +61,12 @@ class ChatViewModel @Inject constructor(
         val userMessage = ChatMessage(
             id = UUID.randomUUID().toString(),
             text = text,
-            isUser = true
+            sentByUser = true
         )
 
         viewModelScope.launch {
-            chatRepository.insertMessage(userMessage, todayDateString)
+            // UPDATED: Pass currentUserId
+            chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
 
             _isTyping.value = true
 
@@ -77,25 +87,22 @@ class ChatViewModel @Inject constructor(
         val displayMessage = if (userPrompt.isNotBlank()) userPrompt else "Can you analyze this?"
 
         viewModelScope.launch {
-            // 1. Move file saving to a background thread so it doesn't freeze the UI
             val savedImagePath = withContext(Dispatchers.IO) {
                 ImageStorageHelper.saveBitmapToCache(context, bitmap)
             }
 
-            // 2. Create the ChatMessage using the PATH, not the Bitmap
             val userMessage = ChatMessage(
                 id = UUID.randomUUID().toString(),
                 text = displayMessage,
-                isUser = true,
-                imageLocalPath = savedImagePath // CHANGED: Pass the path string here
+                sentByUser = true,
+                imageLocalPath = savedImagePath
             )
 
-            // 3. Save to Room DB
-            chatRepository.insertMessage(userMessage, todayDateString)
+            // UPDATED: Pass currentUserId
+            chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
 
             _isTyping.value = true
 
-            // 4. Send the raw Bitmap to Gemini via the network
             val result = geminiService.analyzeMealImage(bitmap, userPrompt)
 
             result.onSuccess { parsedMacros ->
@@ -103,13 +110,14 @@ class ChatViewModel @Inject constructor(
                     val botMessage = ChatMessage(
                         id = UUID.randomUUID().toString(),
                         text = parsedMacros.nutritionistReply.ifBlank { "Here is the breakdown of your meal:" },
-                        isUser = false,
+                        sentByUser = false,
                         isAnalysis = true,
                         mealName = parsedMacros.mealName,
                         estimatedQuantity = parsedMacros.estimatedQuantity,
                         macros = parsedMacros
                     )
-                    chatRepository.insertMessage(botMessage, todayDateString)
+                    // UPDATED: Pass currentUserId
+                    chatRepository.insertMessage(botMessage, todayDateString, currentUserId)
                 } else {
                     saveBotMessage(parsedMacros.nonFoodMessage)
                 }
@@ -127,17 +135,15 @@ class ChatViewModel @Inject constructor(
         val msg = ChatMessage(
             id = UUID.randomUUID().toString(),
             text = text,
-            isUser = false
+            sentByUser = false
         )
-        chatRepository.insertMessage(msg, todayDateString)
+        // UPDATED: Pass currentUserId
+        chatRepository.insertMessage(msg, todayDateString, currentUserId)
     }
 
     fun clearTodayChat() {
         viewModelScope.launch {
             chatRepository.clearChatsForToday(todayDateString)
-
-            // Optional: You can re-add the welcome message here if you want it to appear immediately after clearing
-            // addBotMessage("Hi! I'm Sync AI. Send me a photo of your meal...")
         }
     }
 }
