@@ -11,5 +11,6 @@ data class Macros(
     val protein: Int,
     val carbs: Int,
     val fat: Int,
-    val nonFoodMessage: String = ""
+    val nonFoodMessage: String = "",
+    val nutritionistReply: String = ""
 )

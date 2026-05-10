@@ -1,5 +1,6 @@
 package com.example.fitsync.ui.screens.chat
 
+import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage // NEW: Coil import
 import com.example.fitsync.domain.model.chat.ChatMessage
 import com.example.fitsync.domain.model.chat.Macros
 import java.time.LocalDate
@@ -45,6 +47,8 @@ fun ChatScreen(
     onBackClick: () -> Unit = {}
 ) {
     var messageText by remember { mutableStateOf("") }
+    var selectedImageBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
     val listState = rememberLazyListState()
     val context = LocalContext.current
 
@@ -61,19 +65,25 @@ fun ChatScreen(
             } else {
                 MediaStore.Images.Media.getBitmap(context.contentResolver, it)
             }
-            viewModel.analyzeMealImage(bitmap)
+            selectedImageBitmap = bitmap
         }
     }
 
     Scaffold(
-        topBar = { ChatHeader(userName, onBackClick) },
+        topBar = { ChatHeader(userName, onBackClick,onClearChatClick = { viewModel.clearTodayChat() })},
         bottomBar = {
             ChatInputBar(
                 text = messageText,
+                stagedImage = selectedImageBitmap,
                 onTextChange = { messageText = it },
                 onImageClick = { imagePickerLauncher.launch("image/*") },
+                onRemoveImage = { selectedImageBitmap = null },
                 onSend = {
-                    if (messageText.isNotBlank()) {
+                    if (selectedImageBitmap != null) {
+                        viewModel.analyzeMealImage(selectedImageBitmap!!, messageText)
+                        selectedImageBitmap = null
+                        messageText = ""
+                    } else if (messageText.isNotBlank()) {
                         viewModel.sendTextMessage(messageText)
                         messageText = ""
                     }
@@ -98,7 +108,6 @@ fun ChatScreen(
                     BotMessageBubble(
                         message = msg,
                         onActionClick = { actionText ->
-                            // When a pill is clicked, send it as a message!
                             viewModel.sendTextMessage(actionText)
                         }
                     )
@@ -117,11 +126,17 @@ fun ChatScreen(
 }
 
 // --- Components ---
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatHeader(userName: String, onBackClick: () -> Unit) {
+fun ChatHeader(
+    userName: String,
+    onBackClick: () -> Unit,
+    onClearChatClick: () -> Unit // NEW: Pass the click event up
+) {
     val currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d"))
+
+    // NEW: State to manage the dropdown menu visibility
+    var expanded by remember { mutableStateOf(false) }
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -155,6 +170,28 @@ fun ChatHeader(userName: String, onBackClick: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                // --- NEW: The 3-Dot Options Menu ---
+                actions = {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More Options")
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Clear Chat") },
+                            leadingIcon = {
+                                Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            },
+                            onClick = {
+                                expanded = false
+                                onClearChatClick()
+                            }
+                        )
+                        // You can easily add more DropdownMenuItems here later!
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
             Box(
@@ -182,14 +219,17 @@ fun UserMessageBubble(message: ChatMessage) {
         horizontalArrangement = Arrangement.End
     ) {
         Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxWidth(0.8f)) {
-            if (message.imageBitmap != null) {
+
+            // CHANGED: Check for imageLocalPath instead of raw Bitmap
+            if (message.imageLocalPath != null) {
                 Surface(
                     shape = RoundedCornerShape(20.dp, 20.dp, 4.dp, 20.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp)
                 ) {
-                    Image(
-                        bitmap = message.imageBitmap.asImageBitmap(),
+                    // CHANGED: Use Coil to safely and asynchronously load the image from disk
+                    AsyncImage(
+                        model = message.imageLocalPath,
                         contentDescription = "User Meal",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.size(200.dp)
@@ -237,10 +277,24 @@ fun BotMessageBubble(message: ChatMessage, onActionClick: (String) -> Unit) {
 
         Column(modifier = Modifier.fillMaxWidth(0.85f)) {
             if (message.isAnalysis && message.macros != null) {
-                // Pass the whole Macros object to the card
+
+                if (message.text.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 4.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Text(
+                            text = message.text,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
                 MealAnalysisCard(macros = message.macros)
 
-                // --- ACTION PILLS FOR FOOD ---
                 Spacer(Modifier.height(8.dp))
                 ActionPillsRow(
                     actions = listOf("Log this meal", "Suggest a lighter dinner"),
@@ -260,8 +314,6 @@ fun BotMessageBubble(message: ChatMessage, onActionClick: (String) -> Unit) {
                     )
                 }
 
-                // --- ACTION PILLS FOR NON-FOOD OR REGULAR TEXT ---
-                // We only show these if the message contains the non-food warning
                 if (message.text.contains("don't see any food", ignoreCase = true)) {
                     Spacer(Modifier.height(8.dp))
                     ActionPillsRow(
@@ -314,7 +366,6 @@ fun MealAnalysisCard(macros: Macros) {
                 Text(macros.mealName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
-            // --- DISPLAY ESTIMATED QUANTITY ---
             Text(
                 text = "Portion: ${macros.estimatedQuantity}",
                 style = MaterialTheme.typography.labelMedium,
@@ -361,62 +412,102 @@ fun TypingIndicator() {
         Text("Sync AI is thinking...", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
-
 @Composable
 fun ChatInputBar(
     text: String,
+    stagedImage: Bitmap?,
     onTextChange: (String) -> Unit,
     onImageClick: () -> Unit,
+    onRemoveImage: () -> Unit,
     onSend: () -> Unit
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp,
-        modifier = Modifier.navigationBarsPadding()
+        shadowElevation = 8.dp, // Keeps the nice floating drop-shadow
+        shape = RoundedCornerShape(28.dp), // 1. Rounds the entire outer container
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding() // Keeps it clear of the system gesture bar
+            .imePadding() // 2. CRITICAL: Pushes the floating bar up when the keyboard opens!
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp) // 3. The safe margin floating effect
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onImageClick) {
-                Icon(Icons.Default.PhotoLibrary, contentDescription = "Gallery", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(modifier = Modifier.fillMaxWidth()) {
+
+            // --- Staged Image Preview Area ---
+            if (stagedImage != null) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+                        .size(80.dp)
+                ) {
+                    Image(
+                        bitmap = stagedImage.asImageBitmap(),
+                        contentDescription = "Staged Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                    IconButton(
+                        onClick = onRemoveImage,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .size(24.dp)
+                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Close, "Remove", tint = Color.White, modifier = Modifier.size(14.dp))
+                    }
+                }
             }
 
-            OutlinedTextField(
-                value = text,
-                onValueChange = onTextChange,
-                placeholder = { Text("Describe your meal...", style = MaterialTheme.typography.bodyMedium) },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
-                ),
-                maxLines = 3
-            )
-
-            Spacer(Modifier.width(8.dp))
-
-            IconButton(
-                onClick = onSend,
-                enabled = text.isNotBlank(),
+            // --- Existing Input Row ---
+            Row(
                 modifier = Modifier
-                    .background(
-                        if (text.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        CircleShape
-                    )
-                    .size(48.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp), // Slightly reduced inner padding to fit the pill shape better
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
-                    tint = if (text.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp)
+                IconButton(onClick = onImageClick) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = "Gallery", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    placeholder = { Text("Describe your meal...", style = MaterialTheme.typography.bodyMedium) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                    ),
+                    maxLines = 3
                 )
+
+                Spacer(Modifier.width(8.dp))
+
+                val canSend = text.isNotBlank() || stagedImage != null
+
+                IconButton(
+                    onClick = onSend,
+                    enabled = canSend,
+                    modifier = Modifier
+                        .background(
+                            if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            CircleShape
+                        )
+                        .size(48.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send",
+                        tint = if (canSend) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
             }
         }
     }

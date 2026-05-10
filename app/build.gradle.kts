@@ -87,6 +87,8 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("com.kizitonwose.calendar:compose:2.7.0")
 
+    implementation("io.coil-kt:coil-compose:2.6.0")
+
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)
