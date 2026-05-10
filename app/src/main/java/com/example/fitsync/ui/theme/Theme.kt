@@ -6,6 +6,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -39,6 +40,8 @@ private val FitSyncDarkColorScheme = darkColorScheme(
     onSurface = Color.White,
     surfaceVariant = Color(0xFF21262D) // For input fields in dark mode
 )
+val DefaultAccent = Color(0xFF0D6890)
+val LocalAccentColor = compositionLocalOf { DefaultAccent }
 
 @Composable
 fun FitSyncTheme(

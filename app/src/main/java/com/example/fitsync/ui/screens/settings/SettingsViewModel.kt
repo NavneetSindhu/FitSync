@@ -17,6 +17,12 @@ class SettingsViewModel @Inject constructor(
     private val prefs: PreferenceManager
 ) : ViewModel() {
 
+    private val defaultAccentInt = 0xFF0D5590.toInt()
+
+    // The state flow that holds the color
+    private val _accentColor = MutableStateFlow(defaultAccentInt) // Or fetch from prefs
+    val accentColor: StateFlow<Int> = _accentColor.asStateFlow()
+
     private val _userName = MutableStateFlow(prefs.getUserName())
     val userName = _userName.asStateFlow()
 

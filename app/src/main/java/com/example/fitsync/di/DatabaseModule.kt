@@ -2,6 +2,7 @@ package com.example.fitsync.di
 
 import android.content.Context
 import com.example.fitsync.data.local.FitSyncDatabase
+import com.example.fitsync.data.local.dao.ChatDao
 import com.example.fitsync.data.local.dao.WorkoutDao
 import dagger.Module
 import dagger.Provides
@@ -25,5 +26,11 @@ object DatabaseModule {
     fun provideWorkoutDao(database: FitSyncDatabase): WorkoutDao {
         // Tells Hilt how to get the Dao from the Database
         return database.workoutDao()
+    }
+
+    @Provides
+    fun provideChatDao(database: FitSyncDatabase): ChatDao {
+        // Tells Hilt how to extract the ChatDao from the Database
+        return database.chatDao()
     }
 }
