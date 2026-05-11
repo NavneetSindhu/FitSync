@@ -118,6 +118,26 @@ fun SettingsScreen(
                     SectionDivider()
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SettingIcon(Icons.Default.Navigation)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("Navigation Style", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Text("How you move between screens", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        PillToggleRow(
+                            options = NavStyleOptions, // ["Floating Pill", "Classic Bar"]
+                            selected = navStyle,
+                            accentColor = currentAccent,
+                            onSelect = { viewModel.setNavStyle(it) } // Ensure this exists in your ViewModel
+                        )
+                    }
+                    SectionDivider()
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {

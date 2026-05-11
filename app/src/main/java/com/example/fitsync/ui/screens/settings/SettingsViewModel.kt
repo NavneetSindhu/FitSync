@@ -151,6 +151,7 @@ class SettingsViewModel @Inject constructor(
         prefs.setSyncWifiOnlyEnabled(enabled)
     }
 
+
     fun fullReset(userId: String) {
         viewModelScope.launch {
             prefs.clearAll() // Wipe the disk
