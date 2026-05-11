@@ -7,6 +7,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.example.fitsync.ui.screens.auth.AuthScreen
 import com.example.fitsync.ui.screens.chat.ChatScreen
 import com.example.fitsync.ui.screens.chat.ChatViewModel
 import com.example.fitsync.ui.screens.history.HistoryScreen
@@ -30,6 +31,8 @@ import kotlinx.serialization.Serializable
 @Serializable object Chat
 @Serializable object Splash
 
+@Serializable object Auth
+
 @Composable
 fun FitSyncNavGraph(
     navController: NavHostController,
@@ -37,7 +40,7 @@ fun FitSyncNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Splash
+        startDestination = Auth
     ) {
 
         composable<Splash> {
@@ -67,6 +70,10 @@ fun FitSyncNavGraph(
 //                    navController.popBackStack()
                 }
             )
+        }
+
+        composable<Auth> {
+            AuthScreen(onAuthSuccess = {})
         }
 
         composable<History> {

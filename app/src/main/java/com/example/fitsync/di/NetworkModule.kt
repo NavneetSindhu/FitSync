@@ -2,6 +2,8 @@ package com.example.fitsync.di
 
 import com.example.fitsync.data.remote.FitSyncApi // Make sure this matches your package!
 import com.example.fitsync.data.remote.GeminiService
+import com.example.fitsync.data.repository.AuthRepository
+import com.google.firebase.auth.FirebaseAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,4 +49,12 @@ object NetworkModule {
         // Hilt will automatically pass the Retrofit instance from the function above into here
         return retrofit.create(FitSyncApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(auth: FirebaseAuth): AuthRepository = AuthRepository(auth)
 }

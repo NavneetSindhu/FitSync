@@ -87,7 +87,7 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
     val currentDestination = navBackStackEntry?.destination
 
     val shouldShowBottomBar = currentDestination?.let { dest ->
-        !dest.hasRoute<Settings>() && !dest.hasRoute<Splash>() && !dest.hasRoute<Chat>()
+        !dest.hasRoute<Settings>() && !dest.hasRoute<Splash>() && !dest.hasRoute<Chat>() && !dest.hasRoute<Auth>()
     } ?: true
 
     Scaffold(
