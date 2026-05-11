@@ -73,7 +73,11 @@ fun FitSyncNavGraph(
         }
 
         composable<Auth> {
-            AuthScreen(onAuthSuccess = {})
+            AuthScreen(onAuthSuccess = {
+                navController.navigate(Home) {
+                    popUpTo<Auth> { inclusive = true }
+                }
+            })
         }
 
         composable<History> {
