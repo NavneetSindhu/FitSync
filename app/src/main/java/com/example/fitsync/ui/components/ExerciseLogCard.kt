@@ -39,8 +39,7 @@ fun ExerciseLogCard(
     exerciseName: String,
     sets: List<WorkoutSet>,
     unit: String,
-    accentColor: Color,
-    exerciseIcon: ImageVector, // Note: ExerciseIcon component handles this internally now
+    accentColor: Color, // Exercise specific
     onAddSet: () -> Unit,
     onUpdateSet: (Int, Float, Int) -> Unit,
     onToggleSet: (Int) -> Unit,
@@ -49,6 +48,8 @@ fun ExerciseLogCard(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -56,60 +57,44 @@ fun ExerciseLogCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // --- HEADER ---
+        Column(modifier = Modifier.padding(if (isCompact) 12.dp else 16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // 🔥 REPLACED: Using the new ExerciseIcon component
-                    ExerciseIcon(name = exerciseName, size = 40.dp)
-
+                    ExerciseIcon(name = exerciseName, size = if (isCompact) 36.dp else 40.dp)
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = exerciseName,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = if (isCompact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
-
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreHoriz, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Delete Exercise", color = MaterialTheme.colorScheme.error) },
-                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
-                            onClick = { showMenu = false; onDeleteExercise() }
-                        )
-                    }
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreHoriz, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Delete Exercise", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = { showMenu = false; onDeleteExercise() }
+                    )
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(if (isCompact) 12.dp else 20.dp))
 
-            // --- LABELS ---
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("SET", Modifier.width(40.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                Text(unit.uppercase(), Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                Text("REPS", Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
+            // Labels
+            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                Text("SET", Modifier.width(40.dp), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(unit.uppercase(), Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text("REPS", Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.size(40.dp))
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            // --- SETS LIST ---
             sets.forEach { set ->
                 key(set.setNumber) {
                     SwipeToRevealDelete(onDelete = { onDeleteSet(set.setNumber) }) {
@@ -122,13 +107,11 @@ fun ExerciseLogCard(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            // --- ADD SET BUTTON ---
+            // ADD SET BUTTON (Uses dynamic accent)
             TextButton(
                 onClick = onAddSet,
                 modifier = Modifier.align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.textButtonColors(contentColor = currentAccent)
             ) {
                 Icon(Icons.Default.Add, null, Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))

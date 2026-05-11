@@ -42,7 +42,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    userName: String = "Navneet",
+    userName: String = "Athlete",
     viewModel: ChatViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {}
 ) {

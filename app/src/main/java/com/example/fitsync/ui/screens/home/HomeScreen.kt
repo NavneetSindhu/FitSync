@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +32,10 @@ import com.example.fitsync.ui.screens.log.AddExerciseBottomSheet
 import com.example.fitsync.ui.screens.log.CreateWorkoutBottomSheet
 import com.example.fitsync.ui.screens.log.DailyLogViewModel
 import com.example.fitsync.ui.screens.log.LoggingScreen
-import com.example.fitsync.ui.theme.*
+
+// ── IMPORT GLOBAL PREFERENCES ──────────────────────────────────────────────
+import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
@@ -57,6 +61,15 @@ fun HomeScreen(
     var showAddExerciseSheet by remember { mutableStateOf(false) }
     var showCreateWorkoutSheet by remember { mutableStateOf(false) }
 
+    // Read global settings
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
+
+    // Put this right inside the HomeScreen composable
+    LaunchedEffect(Unit) {
+        homeViewModel.refreshUserData()
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -65,7 +78,7 @@ fun HomeScreen(
                         Text(
                             text = "FitSync",
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = currentAccent, // Matches accent
                             fontSize = 22.sp
                         )
                         Text(
@@ -97,8 +110,8 @@ fun HomeScreen(
                         if (targetPage == 0) showCreateWorkoutSheet = true
                         else showAddExerciseSheet = true
                     },
-                    containerColor = AccentRed,
-                    contentColor = Color.White,
+                    containerColor = currentAccent, // Dynamic Accent Color
+                    contentColor = if (currentAccent.luminance() > 0.4f) Color.Black else Color.White,
                     shape = CircleShape,
                     modifier = Modifier.padding(bottom = FLOATING_NAV_HEIGHT),
                     icon = { Icon(if (targetPage == 0) Icons.Default.PlayArrow else Icons.Default.Add, contentDescription = null) },
@@ -115,7 +128,8 @@ fun HomeScreen(
         ) {
             PillTabRow(
                 selectedTabIndex = pagerState.currentPage,
-                onTabSelected = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } }
+                onTabSelected = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
+                accentColor = currentAccent // Pass accent
             )
 
             HorizontalPager(
@@ -125,7 +139,6 @@ fun HomeScreen(
                 userScrollEnabled = false
             ) { page ->
                 when (page) {
-                    // Pass the real data map down to the Stats Tab!
                     0 -> StatsTabContent(userName = userName, workoutMap = workoutHistory)
                     1 -> LoggingScreen(
                         viewModel = viewModel,
@@ -159,7 +172,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
+fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit, accentColor: Color) {
     val tabs = listOf("Stats", "Today")
 
     Surface(
@@ -173,11 +186,13 @@ fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
             tabs.forEachIndexed { index, title ->
                 val isSelected = selectedTabIndex == index
                 val bgColor by animateColorAsState(
-                    targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    targetValue = if (isSelected) accentColor else Color.Transparent, // Uses dynamic accent
                     label = "TabBg"
                 )
                 val textColor by animateColorAsState(
-                    targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                    targetValue = if (isSelected) {
+                        if (accentColor.luminance() > 0.4f) Color.Black else Color.White
+                    } else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "TabTextColor"
                 )
 
@@ -196,18 +211,21 @@ fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit) {
         }
     }
 }
-// --- REPLACEMENT FOR StatsTabContent IN HomeScreen.kt ---
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>) {
-    // Restrict selection to today or earlier
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+
+    // Read global settings
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             top = 16.dp,
-            bottom = 120.dp // Floating Nav clearance
+            bottom = 120.dp
         )
     ) {
         // --- 1. THE HEADER & HERO STATS (The Progress Grid) ---
@@ -217,7 +235,7 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
                     text = "Hello, $userName! 👋",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.primary
+                    color = currentAccent // Dynamic Accent
                 )
                 Text(
                     text = "Overall Progress",
@@ -233,13 +251,13 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
                     MiniStatCard(
                         label = "Total Volume",
                         value = "${allTimeVolume.toInt()}kg",
-                        color = MaterialTheme.colorScheme.primary,
+                        color = currentAccent, // Uses dynamic accent
                         modifier = Modifier.weight(1f)
                     )
                     MiniStatCard(
                         label = "Total Sets",
                         value = "$allTimeSets",
-                        color = Color(0xFF4CAF50), // Green
+                        color = Color(0xFF4CAF50), // Green (Kept distinct for visual variety)
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -253,7 +271,7 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
                     )
                     MiniStatCard(
                         label = "Current Streak",
-                        value = "3 Days", // Replace with real streak logic later
+                        value = "3 Days",
                         color = Color(0xFFFF9800), // Orange
                         modifier = Modifier.weight(1f)
                     )
@@ -263,9 +281,9 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
 
         // --- 2. CONSISTENCY HEATMAP (The Calendar) ---
         item {
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(if (isCompact) 24.dp else 32.dp))
             SectionHeader(title = "Consistency")
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(if (isCompact) 8.dp else 16.dp))
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Card(
@@ -280,7 +298,6 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
                             selectedDate = selectedDate,
                             workoutMap = workoutMap,
                             onDateSelected = { clickedDate ->
-                                // Restrict selection to today or earlier
                                 if (!clickedDate.isAfter(LocalDate.now())) {
                                     selectedDate = clickedDate
                                 }
@@ -288,7 +305,6 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
                             onMonthChanged = { }
                         )
 
-                        // Small indicator of what is currently selected
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                             thickness = 0.5.dp,
@@ -297,9 +313,9 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
 
                         Text(
                             text = if (selectedDate == LocalDate.now()) "Showing: Today"
-                            else "Showing: ${selectedDate.dayOfMonth} ${selectedDate.month.name.lowercase().capitalize()}",
+                            else "Showing: ${selectedDate.dayOfMonth} ${selectedDate.month.name.lowercase().replaceFirstChar { it.uppercase() }}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = currentAccent, // Dynamic Accent
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
@@ -330,9 +346,9 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
 
         // --- 4. TRENDS & ANALYTICS ---
         item {
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(if (isCompact) 24.dp else 32.dp))
             SectionHeader(title = "Trends & Analytics")
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(if (isCompact) 8.dp else 16.dp))
 
             val pagerState = rememberPagerState(pageCount = { 2 })
             HorizontalPager(
@@ -349,9 +365,9 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
 
         // --- 5. PERSONAL RECORDS (PRs) ---
         item {
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(if (isCompact) 24.dp else 32.dp))
             SectionHeader(title = "Personal Records")
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(if (isCompact) 8.dp else 16.dp))
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 PRPlaceholderCard(exercise = "Barbell Bench Press", weight = "100 kg", reps = "5 reps")
@@ -377,10 +393,13 @@ fun SectionHeader(title: String) {
 
 @Composable
 fun GraphPlaceholderCard(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(if (isCompact) 140.dp else 180.dp), // Height responds to compact setting
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -389,8 +408,8 @@ fun GraphPlaceholderCard(title: String, icon: androidx.compose.ui.graphics.vecto
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    modifier = Modifier.size(if (isCompact) 36.dp else 48.dp),
+                    tint = currentAccent.copy(alpha = 0.5f) // Uses dynamic accent color
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
@@ -442,7 +461,8 @@ fun PRPlaceholderCard(exercise: String, weight: String, reps: String) {
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(text = weight, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                val currentAccent = LocalAccentColor.current
+                Text(text = weight, fontWeight = FontWeight.Black, color = currentAccent)
                 Text(text = reps, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -451,6 +471,8 @@ fun PRPlaceholderCard(exercise: String, weight: String, reps: String) {
 
 @Composable
 fun WorkoutDetailsCard(date: LocalDate, summary: WorkoutSummary) {
+    val currentAccent = LocalAccentColor.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -463,7 +485,7 @@ fun WorkoutDetailsCard(date: LocalDate, summary: WorkoutSummary) {
                 text = "Workout on ${date.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${date.dayOfMonth}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = currentAccent // Uses dynamic accent
             )
             Spacer(modifier = Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

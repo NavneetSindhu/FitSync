@@ -2,6 +2,7 @@ package com.example.fitsync.ui.screens.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fitsync.data.local.PreferenceManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,19 +12,19 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class ProfileUiState(
-    val userName: String = "Navneet",
+    val userName: String = "",
     val email: String = "navneet@example.com",
-    val avatarInitial: String = "N",
+    val avatarInitial: String = "",
     val planLabel: String = "Free Plan",
 
     // Personal details
-    val age: Int = 24,
-    val weightKg: Float = 75f,
-    val heightCm: Float = 175f,
-    val gender: String = "Male",       // "Male" | "Female" | "Other"
-    val fitnessGoal: String = "Build Muscle", // "Lose Weight" | "Build Muscle" | "Stay Active"
+    val age: Int = 0,
+    val weightKg: Float = 0f,
+    val heightCm: Float = 0f,
+    val gender: String = "",
+    val fitnessGoal: String = "",
 
-    // Quick stats
+    // Quick stats (Mocked for now, easily wireable to WorkoutRepository later)
     val totalWorkouts: Int = 24,
     val currentStreak: Int = 5,
     val totalVolumeKg: String = "48.2k",
@@ -35,7 +36,7 @@ data class ProfileUiState(
     // Settings toggles
     val notificationsEnabled: Boolean = true,
     val restTimerEnabled: Boolean = true,
-    val weightUnit: String = "kg",     // "kg" | "lbs"
+    val weightUnit: String = "kg",
 
     // Cloud sync
     val syncStatus: SyncStatus = SyncStatus.Idle,
@@ -66,10 +67,35 @@ fun defaultAchievements() = listOf(
 )
 
 @HiltViewModel
-class ProfileViewModel @Inject constructor() : ViewModel() {
+class ProfileViewModel @Inject constructor(
+    private val prefs: PreferenceManager // 1. INJECT PREFERENCES
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+
+    init {
+        loadProfileData()
+    }
+
+    // 2. LOAD INITIAL VALUES FROM DISK
+    fun loadProfileData() {
+        val name = prefs.getUserName()
+        _uiState.update {
+            it.copy(
+                userName = name,
+                avatarInitial = name.take(1).uppercase(),
+                fitnessGoal = prefs.getUserGoal(),
+                age = prefs.getAge(),
+                weightKg = prefs.getWeight(),
+                heightCm = prefs.getHeight(),
+                gender = prefs.getGender(),
+                weightUnit = if (prefs.isMetric()) "kg" else "lbs",
+                restTimerEnabled = prefs.isAutoStartRestEnabled(),
+                notificationsEnabled = prefs.isNotificationsEnabled()
+            )
+        }
+    }
 
     // ── Personal details editing ──────────────────────────────────────────────
 
@@ -88,6 +114,13 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
         gender: String,
         fitnessGoal: String
     ) {
+        // 3. PERSIST TO DISK IMMEDIATELY
+        prefs.setAge(age)
+        prefs.setWeight(weightKg)
+        prefs.setHeight(heightCm)
+        prefs.setGender(gender)
+        prefs.saveUserData(prefs.getUserName(), fitnessGoal) // Keep name same, update goal
+
         _uiState.update {
             it.copy(
                 age = age,
@@ -98,20 +131,22 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
                 isEditingPersonalDetails = false
             )
         }
-        // TODO: persist via repository
     }
 
     // ── Settings toggles ──────────────────────────────────────────────────────
 
     fun toggleNotifications(enabled: Boolean) {
+        prefs.setNotificationsEnabled(enabled)
         _uiState.update { it.copy(notificationsEnabled = enabled) }
     }
 
     fun toggleRestTimer(enabled: Boolean) {
+        prefs.setAutoStartRestEnabled(enabled)
         _uiState.update { it.copy(restTimerEnabled = enabled) }
     }
 
     fun setWeightUnit(unit: String) {
+        prefs.setMetric(unit == "kg")
         _uiState.update { it.copy(weightUnit = unit) }
     }
 

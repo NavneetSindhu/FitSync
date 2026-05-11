@@ -7,15 +7,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitsync.domain.model.WorkoutSession
-import com.example.fitsync.ui.theme.SuccessGreen
+import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -23,9 +23,12 @@ import java.util.*
 fun HistoryWorkoutCard(
     workout: WorkoutSession,
     modifier: Modifier = Modifier,
-    // 🔥 NEW: Callback to trigger the Bottom Sheet graph
+    unit: String = "kg", // Pass this from HistoryScreen (ViewModel)
     onExerciseClick: (String) -> Unit = {}
 ) {
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
+
     val dateString = remember(workout.date) {
         SimpleDateFormat("EEE, MMM dd", Locale.getDefault()).format(Date(workout.date))
     }
@@ -44,7 +47,7 @@ fun HistoryWorkoutCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(if (isCompact) 12.dp else 16.dp)) {
             // --- HEADER ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -61,12 +64,12 @@ fun HistoryWorkoutCard(
                 Icon(
                     imageVector = if (workout.isSynced) Icons.Default.CloudDone else Icons.Default.CloudQueue,
                     contentDescription = "Sync Status",
-                    tint = if (workout.isSynced) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    tint = if (workout.isSynced) currentAccent else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(if (isCompact) 18.dp else 20.dp)
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(if (isCompact) 12.dp else 16.dp))
 
             // --- EXERCISE ICONS ---
             Row(
@@ -74,32 +77,30 @@ fun HistoryWorkoutCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                workout.exercise.take(5).forEach { ex ->
+                workout.exercise.take(if (isCompact) 6 else 5).forEach { ex ->
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            // 🔥 Makes each icon clickable to open the specific graph
                             .clickable { onExerciseClick(ex.name) }
                     ) {
                         ExerciseIcon(
                             name = ex.name,
-                            size = 36.dp
+                            size = if (isCompact) 32.dp else 36.dp
                         )
                     }
                 }
 
-                if (workout.exercise.size > 5) {
+                if (workout.exercise.size > (if (isCompact) 6 else 5)) {
                     Text(
-                        text = "+${workout.exercise.size - 5}",
+                        text = "+${workout.exercise.size - (if (isCompact) 6 else 5)}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
             HorizontalDivider(
-                modifier = Modifier.padding(vertical = 16.dp),
+                modifier = Modifier.padding(vertical = if (isCompact) 12.dp else 16.dp),
                 thickness = 0.5.dp,
                 color = MaterialTheme.colorScheme.outlineVariant
             )
@@ -110,28 +111,12 @@ fun HistoryWorkoutCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(
-                        "Volume",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "${"%,d".format(workoutVolume)}kg",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Volume", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${"%,d".format(workoutVolume)} $unit", fontWeight = FontWeight.Bold, color = currentAccent)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        "Exercises",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "${workout.exercise.size}",
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Text("Exercises", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${workout.exercise.size}", fontWeight = FontWeight.Bold, color = currentAccent)
                 }
             }
         }

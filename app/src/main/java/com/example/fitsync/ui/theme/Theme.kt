@@ -5,32 +5,38 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+// ── CUSTOM GLOBALS (Accessible from any screen using LocalName.current) ────
+val DefaultAccent = Color(0xFFE53935) // Coral Red default
+val LocalAccentColor = compositionLocalOf { DefaultAccent }
+val LocalCompactCards = compositionLocalOf { false }
+val LocalNavStyle = compositionLocalOf { "Floating Pill" }
+
+// ── COLOR PALETTES ─────────────────────────────────────────────────────────
+
 private val FitSyncLightColorScheme = lightColorScheme(
-    primary = NavyBlue,
-    secondary = AccentRed,
-    tertiary = SuccessGreen,
-    background = BgLight,
+    primary = NavyBlue, // Ensure NavyBlue is defined in Color.kt
+    secondary = AccentRed, // Ensure AccentRed is defined in Color.kt
+    tertiary = SuccessGreen, // Ensure SuccessGreen is defined in Color.kt
+    background = BgLight, // Ensure BgLight is defined in Color.kt
     surface = Color.White,
     onPrimary = Color.White,
     onBackground = NavyBlue,
     onSurface = NavyBlue,
-    surfaceVariant = Color(0xFFF1F4F9) // Light grey for input fields
+    surfaceVariant = Color(0xFFF1F4F9)
 )
 
-// Dark Mode: Kept similar for now, but with a deeper background
-val DarkBg = Color(0xFF0B0E14)      // Deep Charcoal
-val DarkSurface = Color(0xFF161B22) // Lighter Charcoal for cards
-val DarkNavy = Color(0xFF91A7FF)    // Desaturated Navy for Dark Mode
+val DarkBg = Color(0xFF0B0E14)
+val DarkSurface = Color(0xFF161B22)
+val DarkNavy = Color(0xFF91A7FF)
 
-// In ui/theme/Theme.kt
 private val FitSyncDarkColorScheme = darkColorScheme(
     primary = DarkNavy,
     secondary = AccentRed,
@@ -38,15 +44,18 @@ private val FitSyncDarkColorScheme = darkColorScheme(
     surface = DarkSurface,
     onBackground = Color.White,
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF21262D) // For input fields in dark mode
+    surfaceVariant = Color(0xFF21262D)
 )
-val DefaultAccent = Color(0xFF0D6890)
-val LocalAccentColor = compositionLocalOf { DefaultAccent }
+
+// ── ROOT THEME PROVIDER ────────────────────────────────────────────────────
 
 @Composable
 fun FitSyncTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Keep this false to maintain your specific Red/Navy branding for placements
+    accentColor: Color = DefaultAccent,
+    fontScale: Float = 1f,
+    compactCards: Boolean = false,
+    navStyle: String = "Floating Pill",
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -59,27 +68,47 @@ fun FitSyncTheme(
         else -> FitSyncLightColorScheme
     }
 
-    // --- PREMIUM TOUCH: System Bar Styling ---
+    // System Bar Styling
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-
-            // 🔥 REMOVED: window.statusBarColor = ...
-            // We let enableEdgeToEdge keep it transparent for a seamless look.
-
             val insetsController = WindowCompat.getInsetsController(window, view)
-
-            // Light Mode (!darkTheme) -> Dark Icons
-            // Dark Mode (darkTheme) -> Light Icons
             insetsController.isAppearanceLightStatusBars = !darkTheme
             insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography, // <--- This pulls the Poppins config from Type.kt
-        content = content
+    // Dynamically scale all typography based on the user's setting
+    // (Ensure 'Typography' is properly defined in your Type.kt file)
+    val scaledTypography = Typography(
+        displayLarge = Typography.displayLarge.copy(fontSize = Typography.displayLarge.fontSize * fontScale),
+        displayMedium = Typography.displayMedium.copy(fontSize = Typography.displayMedium.fontSize * fontScale),
+        displaySmall = Typography.displaySmall.copy(fontSize = Typography.displaySmall.fontSize * fontScale),
+        headlineLarge = Typography.headlineLarge.copy(fontSize = Typography.headlineLarge.fontSize * fontScale),
+        headlineMedium = Typography.headlineMedium.copy(fontSize = Typography.headlineMedium.fontSize * fontScale),
+        headlineSmall = Typography.headlineSmall.copy(fontSize = Typography.headlineSmall.fontSize * fontScale),
+        titleLarge = Typography.titleLarge.copy(fontSize = Typography.titleLarge.fontSize * fontScale),
+        titleMedium = Typography.titleMedium.copy(fontSize = Typography.titleMedium.fontSize * fontScale),
+        titleSmall = Typography.titleSmall.copy(fontSize = Typography.titleSmall.fontSize * fontScale),
+        bodyLarge = Typography.bodyLarge.copy(fontSize = Typography.bodyLarge.fontSize * fontScale),
+        bodyMedium = Typography.bodyMedium.copy(fontSize = Typography.bodyMedium.fontSize * fontScale),
+        bodySmall = Typography.bodySmall.copy(fontSize = Typography.bodySmall.fontSize * fontScale),
+        labelLarge = Typography.labelLarge.copy(fontSize = Typography.labelLarge.fontSize * fontScale),
+        labelMedium = Typography.labelMedium.copy(fontSize = Typography.labelMedium.fontSize * fontScale),
+        labelSmall = Typography.labelSmall.copy(fontSize = Typography.labelSmall.fontSize * fontScale)
     )
+
+    // Inject our custom settings into the Compose Tree!
+    CompositionLocalProvider(
+        LocalAccentColor provides accentColor,
+        LocalCompactCards provides compactCards,
+        LocalNavStyle provides navStyle
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = scaledTypography,
+            content = content
+        )
+    }
 }

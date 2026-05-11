@@ -21,6 +21,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +33,11 @@ import com.example.fitsync.domain.model.Exercise
 import com.example.fitsync.domain.model.WorkoutSession
 import com.example.fitsync.ui.components.HistoryWorkoutCard
 import com.example.fitsync.ui.theme.*
+
+// ── IMPORT GLOBAL PREFERENCES ──────────────────────────────────────────────
+import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
+
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -44,7 +50,12 @@ fun HistoryScreen(
     onEditWorkout: (WorkoutSession) -> Unit = {},
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
+    val weightUnit by viewModel.weightUnit.collectAsState()
     val workouts by viewModel.workoutHistory.collectAsState(initial = emptyList())
+
+    // ── 1. GRAB GLOBAL SETTINGS ──────────────────────────────────────────────
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
 
     // --- STATE FOR BOTTOM SHEET ---
     var selectedExerciseDetails by remember { mutableStateOf<Pair<String, List<Exercise>>?>(null) }
@@ -109,8 +120,17 @@ fun HistoryScreen(
         ) {
             // Filter Chips
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                FilterChipRow(availableMonths, selectedMonth) { selectedMonth = it }
-                FilterChipRow(availableExercises, selectedExercise) { selectedExercise = it }
+                FilterChipRow(
+                    items = availableMonths,
+                    selectedItem = selectedMonth,
+                    accentColor = currentAccent
+                ) { selectedMonth = it }
+
+                FilterChipRow(
+                    items = availableExercises,
+                    selectedItem = selectedExercise,
+                    accentColor = currentAccent
+                ) { selectedExercise = it }
             }
 
             if (filteredWorkouts.isEmpty()) {
@@ -121,9 +141,17 @@ fun HistoryScreen(
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (isCompact) 8.dp else 12.dp)
                 ) {
-                    item { HistorySummaryHeader(filteredWorkouts.size, totalVolume) }
+                    item {
+                        HistorySummaryHeader(
+                            count = filteredWorkouts.size,
+                            volume = totalVolume,
+                            accentColor = currentAccent,
+                            unit = weightUnit,
+                            isCompact = isCompact
+                        )
+                    }
 
                     items(items = filteredWorkouts, key = { it.id }) { workout ->
                         SwipeActionContainer(
@@ -132,13 +160,12 @@ fun HistoryScreen(
                         ) {
                             HistoryWorkoutCard(
                                 workout = workout,
-                                // 🔥 CLICK ANYWHERE ON CARD
+                                unit = weightUnit, // Correctly pass dynamic unit
                                 modifier = Modifier.clickable {
                                     if (workout.exercise.isNotEmpty()) {
                                         openExerciseGraph(workout.exercise.first().name)
                                     }
                                 },
-                                // 🔥 CLICK SPECIFIC ICON
                                 onExerciseClick = { exerciseName ->
                                     openExerciseGraph(exerciseName)
                                 }
@@ -154,6 +181,7 @@ fun HistoryScreen(
             ExerciseDetailBottomSheet(
                 exerciseName = name,
                 history = history,
+                weightUnit = weightUnit, // Pass the unit to the graph sheet
                 onDismiss = { selectedExerciseDetails = null }
             )
         }
@@ -231,33 +259,41 @@ fun SwipeActionContainer(
 }
 
 @Composable
-fun HistorySummaryHeader(count: Int, volume: Int) {
+fun HistorySummaryHeader(
+    count: Int,
+    volume: Int,
+    accentColor: Color,
+    unit: String,
+    isCompact: Boolean
+) {
+    val contentColor = if (accentColor.luminance() > 0.4f) Color.Black else Color.White
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
-        shape = RoundedCornerShape(16.dp)
+        colors = CardDefaults.cardColors(containerColor = accentColor),
+        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp)
     ) {
         Row(
             modifier = Modifier
-                .padding(20.dp)
+                .padding(if (isCompact) 16.dp else 20.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("Total Volume", color = Color.White.copy(0.7f), fontSize = 11.sp)
-                Text("${"%,d".format(volume)} kg", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Total Volume", color = contentColor.copy(0.7f), fontSize = 11.sp)
+                Text("${"%,d".format(volume)} $unit", color = contentColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("Sessions", color = Color.White.copy(0.7f), fontSize = 11.sp)
-                Text("$count", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("Sessions", color = contentColor.copy(0.7f), fontSize = 11.sp)
+                Text("$count", color = contentColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-fun FilterChipRow(items: List<String>, selectedItem: String, onSelected: (String) -> Unit) {
+fun FilterChipRow(items: List<String>, selectedItem: String, accentColor: Color, onSelected: (String) -> Unit) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -268,7 +304,11 @@ fun FilterChipRow(items: List<String>, selectedItem: String, onSelected: (String
                 selected = selectedItem == item,
                 onClick = { onSelected(item) },
                 label = { Text(item, fontSize = 12.sp) },
-                shape = CircleShape
+                shape = CircleShape,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = accentColor,
+                    selectedLabelColor = if (accentColor.luminance() > 0.4f) Color.Black else Color.White
+                )
             )
         }
     }
