@@ -13,20 +13,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.fitsync.ui.theme.ExerciseVisuals
+import com.example.fitsync.ui.theme.LocalAccentColor
 
 @Composable
 fun ExerciseIcon(
     name: String,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp
+    size: androidx.compose.ui.unit.Dp = 40.dp
 ) {
     val meta = ExerciseVisuals.getMetaData(name)
+    val currentAccent = LocalAccentColor.current
 
     Box(
         modifier = modifier
             .size(size)
             .background(
-                color = meta.accentColor.copy(alpha = 0.12f),
+                // Use a mix of exercise-specific color and global accent for harmony
+                color = currentAccent.copy(alpha = 0.12f),
                 shape = RoundedCornerShape(12.dp)
             ),
         contentAlignment = Alignment.Center
@@ -35,8 +38,7 @@ fun ExerciseIcon(
             painter = painterResource(id = meta.iconRes),
             contentDescription = name,
             modifier = Modifier.size(size * 0.65f),
-            // 🔥 This tints your PNG to match your app's theme colors
-            colorFilter = ColorFilter.tint(meta.accentColor)
+            colorFilter = ColorFilter.tint(currentAccent)
         )
     }
 }

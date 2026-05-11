@@ -29,6 +29,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// ── IMPORT GLOBAL PREFERENCES ──────────────────────────────────────────────
+import com.example.fitsync.ui.theme.LocalCompactCards
+
 // ─── ROUTER ───────────────────────────────────────────────────────────────
 
 enum class AuthSheetMode { Welcome, Login, SignUp, ForgotPassword }
@@ -95,13 +98,15 @@ fun WelcomeSheet(
     onGoogleClick: () -> Unit,
     isLoading: Boolean
 ) {
+    val isCompact = LocalCompactCards.current
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 24.dp)
             .padding(top = 8.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(if (isCompact) 10.dp else 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -128,7 +133,7 @@ fun WelcomeSheet(
 
         OutlinedButton(
             onClick = onLoginClick,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(if (isCompact) 48.dp else 56.dp),
             shape = RoundedCornerShape(18.dp),
             border = ButtonDefaults.outlinedButtonBorder.copy(
                 brush = Brush.linearGradient(listOf(accent.copy(0.7f), accent.copy(0.3f)))
@@ -142,6 +147,7 @@ fun WelcomeSheet(
         SocialButton(
             label = "Continue with Google",
             icon = Icons.Default.Language,
+            isCompact = isCompact,
             onClick = onGoogleClick
         )
 
@@ -163,6 +169,7 @@ fun LoginSheet(
     onSwitchToSignUp: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val isCompact = LocalCompactCards.current
     var email    by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPass by remember { mutableStateOf(false) }
@@ -174,7 +181,7 @@ fun LoginSheet(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(top = 4.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(if (isCompact) 10.dp else 14.dp)
     ) {
         AuthTextField(
             value = email,
@@ -183,6 +190,7 @@ fun LoginSheet(
             leadingIcon = Icons.Default.Email,
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next,
+            accent = accent,
             onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
         )
 
@@ -195,6 +203,7 @@ fun LoginSheet(
             imeAction = ImeAction.Done,
             isPassword = true,
             showPassword = showPass,
+            accent = accent,
             onTogglePassword = { showPass = !showPass },
             onImeAction = {
                 focusManager.clearFocus()
@@ -234,6 +243,7 @@ fun SignUpSheet(
     onSwitchToLogin: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val isCompact = LocalCompactCards.current
     var name     by remember { mutableStateOf("") }
     var email    by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -260,7 +270,7 @@ fun SignUpSheet(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
             .padding(top = 4.dp, bottom = 32.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(if (isCompact) 10.dp else 14.dp)
     ) {
         AuthTextField(
             value = name,
@@ -268,6 +278,7 @@ fun SignUpSheet(
             label = "Full Name",
             leadingIcon = Icons.Default.Person,
             imeAction = ImeAction.Next,
+            accent = accent,
             onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
         )
         AuthTextField(
@@ -277,6 +288,7 @@ fun SignUpSheet(
             leadingIcon = Icons.Default.Email,
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next,
+            accent = accent,
             onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
         )
         AuthTextField(
@@ -288,6 +300,7 @@ fun SignUpSheet(
             imeAction = ImeAction.Next,
             isPassword = true,
             showPassword = showPass,
+            accent = accent,
             onTogglePassword = { showPass = !showPass },
             onImeAction = { focusManager.moveFocus(FocusDirection.Down) }
         )
@@ -329,6 +342,7 @@ fun SignUpSheet(
             imeAction = ImeAction.Done,
             isPassword = true,
             showPassword = showPass,
+            accent = accent,
             onTogglePassword = { showPass = !showPass },
             onImeAction = { focusManager.clearFocus() },
             isError = confirm.isNotEmpty() && confirm != password,
@@ -361,6 +375,7 @@ fun ForgotPasswordSheet(
     onSendReset: (String) -> Unit,
     onClearReset: () -> Unit
 ) {
+    val isCompact = LocalCompactCards.current
     var email by remember { mutableStateOf("") }
 
     DisposableEffect(Unit) { onDispose { onClearReset() } }
@@ -410,7 +425,7 @@ fun ForgotPasswordSheet(
                 }
             } else {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (isCompact) 12.dp else 16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
@@ -425,6 +440,7 @@ fun ForgotPasswordSheet(
                         leadingIcon = Icons.Default.Email,
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Done,
+                        accent = accent,
                         onImeAction = {
                             if (email.isNotBlank()) onSendReset(email)
                         }
@@ -453,9 +469,11 @@ fun FitButton(
     enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
+    val isCompact = LocalCompactCards.current
+
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(56.dp),
+        modifier = modifier.fillMaxWidth().height(if (isCompact) 48.dp else 56.dp),
         shape = RoundedCornerShape(18.dp),
         colors = ButtonDefaults.buttonColors(containerColor = accent),
         enabled = enabled && !isLoading
@@ -480,6 +498,7 @@ fun AuthTextField(
     onValueChange: (String) -> Unit,
     label: String,
     leadingIcon: ImageVector,
+    accent: Color, // DYNAMIC ACCENT
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     isPassword: Boolean = false,
@@ -519,7 +538,12 @@ fun AuthTextField(
         supportingText = supportingText?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = accent,
+            focusedLabelColor = accent,
+            cursorColor = accent
+        )
     )
 }
 
@@ -527,12 +551,13 @@ fun AuthTextField(
 private fun SocialButton(
     label: String,
     icon: ImageVector,
+    isCompact: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(52.dp),
+        modifier = modifier.fillMaxWidth().height(if (isCompact) 48.dp else 52.dp),
         shape = RoundedCornerShape(16.dp),
         border = ButtonDefaults.outlinedButtonBorder.copy(
             brush = Brush.linearGradient(

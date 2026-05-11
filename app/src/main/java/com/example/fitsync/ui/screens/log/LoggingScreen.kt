@@ -24,19 +24,28 @@ import androidx.compose.ui.unit.dp
 import com.example.fitsync.ui.components.EmptyWorkoutState
 import com.example.fitsync.ui.components.ExerciseCarouselItem
 import com.example.fitsync.ui.components.ExerciseLogCard
-import com.example.fitsync.ui.theme.AccentRed
 import com.example.fitsync.ui.theme.ExerciseVisuals
 import kotlinx.coroutines.launch
 
+// ── IMPORT OUR GLOBAL PREFERENCES ──────────────────────────────────────────
+import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LoggingScreen( //
+fun LoggingScreen(
     viewModel: DailyLogViewModel,
     uiState: DailyLogUiState,
     onFinishWorkout: () -> Unit
 ) {
+    // Note: If you want to make units dynamic later, you can add a LocalWeightUnit
+    // to your Theme.kt just like we did with LocalAccentColor!
     val weightUnit = "kg"
     val coroutineScope = rememberCoroutineScope()
+
+    // 1. Grab global settings
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
 
     if (uiState.exercises.isNotEmpty()) {
         val pagerState = rememberPagerState(pageCount = { uiState.exercises.size })
@@ -60,7 +69,7 @@ fun LoggingScreen( //
                 text = "Current Session",
                 modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
                 style = MaterialTheme.typography.labelLarge,
-                color = AccentRed,
+                color = currentAccent, // <-- Uses dynamic accent color
                 fontWeight = FontWeight.Bold
             )
 
@@ -95,13 +104,13 @@ fun LoggingScreen( //
                         onFinishWorkout()
                     },
                     shape = RoundedCornerShape(16.dp),
-                    color = AccentRed,
+                    color = currentAccent, // <-- Uses dynamic accent color
                     contentColor = Color.White,
-                    modifier = Modifier.size(56.dp),
+                    modifier = Modifier.size(if (isCompact) 48.dp else 56.dp), // <-- Responds to compact cards
                     tonalElevation = 4.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Check, "Finish", modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.Check, "Finish", modifier = Modifier.size(if (isCompact) 24.dp else 28.dp))
                     }
                 }
             }
@@ -112,7 +121,8 @@ fun LoggingScreen( //
                 horizontalArrangement = Arrangement.Center
             ) {
                 repeat(uiState.exercises.size) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) AccentRed else AccentRed.copy(alpha = 0.2f)
+                    // Uses dynamic accent color
+                    val color = if (pagerState.currentPage == iteration) currentAccent else currentAccent.copy(alpha = 0.2f)
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 3.dp)
@@ -145,8 +155,7 @@ fun LoggingScreen( //
                                 exerciseName = currentExercise.name,
                                 sets = currentExercise.sets,
                                 unit = weightUnit,
-                                accentColor = meta.accentColor,
-                                exerciseIcon = Icons.Default.Check, // Fallback, uses name internally
+                                accentColor = meta.accentColor, // Keeps the exercise-specific color
                                 onAddSet = { viewModel.addSet(currentExercise.name) },
                                 onUpdateSet = { s, w, r -> viewModel.updateSet(currentExercise.name, s, w, r) },
                                 onToggleSet = { s -> viewModel.toggleSetCompletion(currentExercise.name, s) },

@@ -10,19 +10,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.fitsync.domain.model.Exercise
-import com.example.fitsync.ui.theme.AccentRed
 import co.yml.charts.axis.AxisData
 import co.yml.charts.common.model.Point
 import co.yml.charts.ui.linechart.LineChart
 import co.yml.charts.ui.linechart.model.*
+
+// ── IMPORT GLOBAL PREFERENCES ──────────────────────────────────────────────
+import com.example.fitsync.ui.theme.LocalAccentColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseDetailBottomSheet(
     exerciseName: String,
     history: List<Exercise>,
+    weightUnit: String, // <-- Added dynamic unit parameter
     onDismiss: () -> Unit
 ) {
+    // 1. Grab Global Accent
+    val currentAccent = LocalAccentColor.current
+
     val points = remember(history) {
         history.mapIndexed { index, ex ->
             val volume = ex.sets.sumOf { (it.weight * it.reps).toDouble() }.toFloat()
@@ -30,7 +36,7 @@ fun ExerciseDetailBottomSheet(
         }
     }
 
-    // 🔥 Using MaterialTheme colors to ensure Dark Mode compatibility
+    // Using MaterialTheme colors to ensure Dark Mode compatibility
     val labelColor = MaterialTheme.colorScheme.onSurface
     val axisColor = MaterialTheme.colorScheme.outlineVariant
 
@@ -38,7 +44,7 @@ fun ExerciseDetailBottomSheet(
         .axisStepSize(80.dp)
         .steps(if (points.size > 1) points.size - 1 else 1)
         .labelData { i -> "S${i + 1}" }
-        .axisLabelColor(labelColor) // Use this instead of tint
+        .axisLabelColor(labelColor)
         .axisLineColor(axisColor)
         .build()
 
@@ -58,13 +64,14 @@ fun ExerciseDetailBottomSheet(
             lines = listOf(
                 Line(
                     dataPoints = points,
-                    lineStyle = LineStyle(color = AccentRed, width = 3f),
-                    intersectionPoint = IntersectionPoint(color = AccentRed, radius = 4.dp),
-                    selectionHighlightPoint = SelectionHighlightPoint(color = AccentRed),
+                    // 2. APPLY ACCENT COLOR TO CHART
+                    lineStyle = LineStyle(color = currentAccent, width = 3f),
+                    intersectionPoint = IntersectionPoint(color = currentAccent, radius = 4.dp),
+                    selectionHighlightPoint = SelectionHighlightPoint(color = currentAccent),
                     shadowUnderLine = ShadowUnderLine(
                         alpha = 0.1f,
                         brush = Brush.verticalGradient(
-                            listOf(AccentRed, Color.Transparent)
+                            listOf(currentAccent, Color.Transparent)
                         )
                     )
                 )
@@ -73,8 +80,6 @@ fun ExerciseDetailBottomSheet(
         xAxisData = xAxisData,
         yAxisData = yAxisData,
         backgroundColor = MaterialTheme.colorScheme.surface
-        // 🔥 GridConfig is often causing issues in some 2.x sub-versions,
-        // so we omit it to let the chart use its default stable background.
     )
 
     ModalBottomSheet(
@@ -91,10 +96,11 @@ fun ExerciseDetailBottomSheet(
             Text(
                 text = exerciseName,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.ExtraBold
+                fontWeight = FontWeight.ExtraBold,
+                color = currentAccent // Subtle flair to match the chart
             )
             Text(
-                text = "Volume Progression (kg)",
+                text = "Volume Progression ($weightUnit)", // 3. APPLY DYNAMIC UNIT
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -124,8 +130,10 @@ fun ExerciseDetailBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 val maxWeight = history.flatMap { it.sets }.maxOfOrNull { it.weight } ?: 0f
-                StatItem("Personal Best", "$maxWeight kg")
-                StatItem("Sessions", "${history.size}")
+                val weightFormatted = if (maxWeight % 1f == 0f) "${maxWeight.toInt()}" else "$maxWeight"
+
+                StatItem("Personal Best", "$weightFormatted $weightUnit", currentAccent)
+                StatItem("Sessions", "${history.size}", currentAccent)
             }
 
             Spacer(Modifier.height(24.dp))
@@ -134,7 +142,7 @@ fun ExerciseDetailBottomSheet(
 }
 
 @Composable
-fun StatItem(label: String, value: String) {
+fun StatItem(label: String, value: String, accentColor: Color) {
     Column {
         Text(
             text = label,
@@ -145,7 +153,7 @@ fun StatItem(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = accentColor // 4. APPLY DYNAMIC ACCENT
         )
     }
 }

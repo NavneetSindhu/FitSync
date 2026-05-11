@@ -1,5 +1,7 @@
 package com.example.fitsync.ui
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,6 +19,7 @@ import com.example.fitsync.ui.screens.settings.SettingsScreen
 import com.example.fitsync.ui.screens.settings.SettingsViewModel
 import com.example.fitsync.ui.screens.log.DailyLogViewModel // Added import
 import com.example.fitsync.ui.screens.profile.ProfileScreen
+import com.example.fitsync.ui.screens.profile.ProfileViewModel
 import com.example.fitsync.ui.screens.splash.SplashScreen
 import kotlinx.serialization.Serializable
 
@@ -87,13 +90,20 @@ fun FitSyncNavGraph(
         }
 
         composable<Profile> {
-            ProfileScreen()
+            val profileViewModel: ProfileViewModel = hiltViewModel()
+            ProfileScreen(
+                onNavigateToSettings = {
+                    navController.navigate(Settings)
+                }
+            )
         }
 
         composable<Chat> {
             val chatViewModel: ChatViewModel = hiltViewModel()
+            val userName by settingsViewModel.userName.collectAsState()
 
             ChatScreen(
+                userName = userName,
                 onBackClick = {navController.popBackStack()},
                 viewModel = chatViewModel
 

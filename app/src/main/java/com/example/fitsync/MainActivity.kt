@@ -53,7 +53,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.example.fitsync.ui.*
 import com.example.fitsync.ui.screens.settings.SettingsViewModel
 import com.example.fitsync.ui.theme.FitSyncTheme
+
+// ── IMPORT GLOBALS FROM THEME ───────────────────────────────────────────────
 import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
+import com.example.fitsync.ui.theme.LocalNavStyle
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -66,15 +70,26 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
+
+            // ── 1. COLLECT ALL GLOBAL SETTINGS ──────────────────────────────
             val isDarkMode by settingsViewModel.isDarkMode.collectAsState()
             val accentColorInt by settingsViewModel.accentColor.collectAsState()
+            val fontScale by settingsViewModel.fontScale.collectAsState()
+            val compactCards by settingsViewModel.compactCards.collectAsState()
+            val navStyle by settingsViewModel.navStyle.collectAsState()
 
             val currentAccent = Color(accentColorInt.toLong() and 0xFFFFFFFF)
 
-            CompositionLocalProvider(LocalAccentColor provides currentAccent) {
-                FitSyncTheme(darkTheme = isDarkMode, dynamicColor = false) {
-                    FitSyncAppContainer(settingsViewModel)
-                }
+            // ── 2. PASS TO THEME (Theme now handles the CompositionLocals) ──
+            FitSyncTheme(
+                darkTheme = isDarkMode,
+                dynamicColor = false,
+                accentColor = currentAccent,
+                fontScale = fontScale,
+                compactCards = compactCards,
+                navStyle = navStyle
+            ) {
+                FitSyncAppContainer(settingsViewModel)
             }
         }
     }
@@ -90,79 +105,90 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
         !dest.hasRoute<Settings>() && !dest.hasRoute<Splash>() && !dest.hasRoute<Chat>() && !dest.hasRoute<Auth>()
     } ?: true
 
+    // Grab the current nav style from our global state
+    val currentNavStyle = LocalNavStyle.current
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.navigationBars,
         bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
+            AnimatedVisibility(
+                visible = shouldShowBottomBar,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeIn(),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeOut()
             ) {
-                AnimatedVisibility(
-                    visible = shouldShowBottomBar,
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        )
-                    ) + fadeIn(),
-                    exit = slideOutVertically(
-                        targetOffsetY = { it },
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMediumLow
-                        )
-                    ) + fadeOut()
-                ) {
-                    val currentAccent = LocalAccentColor.current
+                val currentAccent = LocalAccentColor.current
+                val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-                    val routeName = when {
-                        currentDestination?.hasRoute<Home>() == true -> "Home"
-                        currentDestination?.hasRoute<Chat>() == true -> "Chat"
-                        currentDestination?.hasRoute<History>() == true -> "History"
-                        currentDestination?.hasRoute<Profile>() == true -> "Profile"
-                        else -> null
+                val routeName = when {
+                    currentDestination?.hasRoute<Home>() == true -> "Home"
+                    currentDestination?.hasRoute<Chat>() == true -> "Chat"
+                    currentDestination?.hasRoute<History>() == true -> "History"
+                    currentDestination?.hasRoute<Profile>() == true -> "Profile"
+                    else -> null
+                }
+
+                val onNavigate: (String) -> Unit = { route ->
+                    val target = when (route) {
+                        "Home" -> Home
+                        "Chat" -> Chat
+                        "History" -> History
+                        "Profile" -> Profile
+                        else -> Home
                     }
+                    navController.navigate(target) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
 
-                    // KEY FIX: Detect dark mode from MaterialTheme background luminance.
-                    // isSystemInDarkTheme() ignores your custom darkTheme param in FitSyncTheme
-                    // and always reads the OS setting, causing the wrong glass color to be used.
-                    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
-
-                    FloatingFitSyncNavBar(
+                // ── 3. DYNAMIC NAVIGATION BAR ROUTER ────────────────────────
+                if (currentNavStyle == "Classic Bar") {
+                    ClassicFitSyncNavBar(
                         currentDestination = routeName,
                         accentColor = currentAccent,
-                        isDarkTheme = isDarkTheme,
-                        onNavigate = { route ->
-                            val target = when (route) {
-                                "Home" -> Home
-                                "Chat" -> Chat
-                                "History" -> History
-                                "Profile" -> Profile
-                                else -> Home
-                            }
-                            navController.navigate(target) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
+                        onNavigate = onNavigate
                     )
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+                        FloatingFitSyncNavBar(
+                            currentDestination = routeName,
+                            accentColor = currentAccent,
+                            isDarkTheme = isDarkTheme,
+                            onNavigate = onNavigate
+                        )
+                    }
                 }
             }
         }
     ) { innerPadding ->
+        // Dynamically adjust padding so standard nav bar doesn't cover content,
+        // but floating pill lets content scroll behind it.
+        val bottomPadding = if (currentNavStyle == "Classic Bar") innerPadding.calculateBottomPadding() else 0.dp
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
                     top = innerPadding.calculateTopPadding(),
                     start = innerPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
-                    end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
+                    end = innerPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                    bottom = bottomPadding
                 )
         ) {
             FitSyncNavGraph(
@@ -173,6 +199,51 @@ fun FitSyncAppContainer(settingsViewModel: SettingsViewModel) {
     }
 }
 
+// ── NEW COMPONENT: Classic Material 3 Bottom Bar ──────────────────────────────
+@Composable
+fun ClassicFitSyncNavBar(
+    currentDestination: String?,
+    accentColor: Color,
+    onNavigate: (String) -> Unit
+) {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 8.dp
+    ) {
+        val tabs = listOf(
+            Triple("Home", Icons.Filled.Home, Icons.Outlined.Home),
+            Triple("Chat", Icons.Filled.ChatBubbleOutline, Icons.Outlined.ChatBubbleOutline),
+            Triple("History", Icons.Filled.DateRange, Icons.Outlined.DateRange),
+            Triple("Profile", Icons.Filled.Person, Icons.Outlined.Person)
+        )
+
+        tabs.forEach { (route, filledIcon, outlinedIcon) ->
+            val isSelected = currentDestination == route
+
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = { onNavigate(route) },
+                icon = {
+                    Icon(
+                        imageVector = if (isSelected) filledIcon else outlinedIcon,
+                        contentDescription = route
+                    )
+                },
+                label = { Text(route, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = accentColor,
+                    selectedTextColor = accentColor,
+                    indicatorColor = accentColor.copy(alpha = 0.15f),
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+    }
+}
+
+// ── EXISTING COMPONENT: Floating Glass Pill ───────────────────────────────────
 @Composable
 fun FloatingFitSyncNavBar(
     currentDestination: String?,
@@ -180,26 +251,14 @@ fun FloatingFitSyncNavBar(
     isDarkTheme: Boolean,
     onNavigate: (String) -> Unit
 ) {
-    // Glass tint: dark on dark theme, light on light theme
-    val glassBackgroundColor = if (isDarkTheme) {
-        Color(0xFF1C1C1E).copy(alpha = 0.95f)
-    } else {
-        Color(0xFFF2F2F7).copy(alpha = 0.90f)
-    }
-
-    // Bright border = glass highlight edge
-    val glassBorderColor = if (isDarkTheme) {
-        Color.White.copy(alpha = 0.10f)
-    } else {
-        Color.White.copy(alpha = 0.90f)
-    }
+    val glassBackgroundColor = if (isDarkTheme) Color(0xFF1C1C1E).copy(alpha = 0.95f) else Color(0xFFF2F2F7).copy(alpha = 0.90f)
+    val glassBorderColor = if (isDarkTheme) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.90f)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 12.dp)
             .imePadding()
-            // Shadow MUST be before .clip() — otherwise it gets clipped away
             .shadow(
                 elevation = 20.dp,
                 shape = RoundedCornerShape(32.dp),
@@ -208,39 +267,19 @@ fun FloatingFitSyncNavBar(
             )
             .clip(RoundedCornerShape(32.dp))
             .background(glassBackgroundColor)
-            .border(
-                width = 1.dp,
-                color = glassBorderColor,
-                shape = RoundedCornerShape(32.dp)
-            )
-            // Blocks all touch events from passing through to content below
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                enabled = true,
-                onClick = {}
-            )
+            .border(width = 1.dp, color = glassBorderColor, shape = RoundedCornerShape(32.dp))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, enabled = true, onClick = {})
     ) {
-        // True backdrop blur on Android 12+ (API 31+)
-        // Falls back gracefully to the opaque tint on older devices
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .graphicsLayer {
-                        renderEffect = BlurEffect(
-                            radiusX = 25f,
-                            radiusY = 25f,
-                            edgeTreatment = TileMode.Clamp
-                        )
-                    }
+                    .graphicsLayer { renderEffect = BlurEffect(radiusX = 25f, radiusY = 25f, edgeTreatment = TileMode.Clamp) }
             )
         }
 
         Row(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(8.dp).fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -253,27 +292,14 @@ fun FloatingFitSyncNavBar(
 
             tabs.forEach { (route, filledIcon, outlinedIcon) ->
                 val isSelected = currentDestination == route
-
-                AnimatedNavItem(
-                    label = route,
-                    icon = if (isSelected) filledIcon else outlinedIcon,
-                    isSelected = isSelected,
-                    accentColor = accentColor,
-                    onClick = { onNavigate(route) }
-                )
+                AnimatedNavItem(label = route, icon = if (isSelected) filledIcon else outlinedIcon, isSelected = isSelected, accentColor = accentColor, onClick = { onNavigate(route) })
             }
         }
     }
 }
 
 @Composable
-fun AnimatedNavItem(
-    label: String,
-    icon: ImageVector,
-    isSelected: Boolean,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
+fun AnimatedNavItem(label: String, icon: ImageVector, isSelected: Boolean, accentColor: Color, onClick: () -> Unit) {
     val backgroundColor = if (isSelected) accentColor.copy(alpha = 0.15f) else Color.Transparent
     val contentColor = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
 
@@ -281,35 +307,14 @@ fun AnimatedNavItem(
         modifier = Modifier
             .clip(CircleShape)
             .background(backgroundColor)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            )
-            .padding(
-                horizontal = if (isSelected) 16.dp else 12.dp,
-                vertical = 12.dp
-            ),
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+            .padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(24.dp)
-            )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+            Icon(imageVector = icon, contentDescription = label, tint = contentColor, modifier = Modifier.size(24.dp))
             AnimatedVisibility(visible = isSelected) {
-                Text(
-                    text = label,
-                    color = contentColor,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+                Text(text = label, color = contentColor, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
             }
         }
     }

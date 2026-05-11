@@ -2,6 +2,7 @@ package com.example.fitsync.ui.screens.log
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fitsync.data.local.PreferenceManager
 import com.example.fitsync.data.repository.WorkoutRepository
 import com.example.fitsync.domain.model.Exercise
 import com.example.fitsync.domain.model.WorkoutSession
@@ -15,12 +16,12 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
 class DailyLogViewModel @Inject constructor(
-    private val repository: WorkoutRepository
+    private val repository: WorkoutRepository,
+    private val prefs: PreferenceManager // 1. INJECT PREFERENCES HERE
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DailyLogUiState())
@@ -30,7 +31,6 @@ class DailyLogViewModel @Inject constructor(
     val userId: StateFlow<Long> = _userId.asStateFlow()
 
     init {
-        // Generating a unique ID for cloud syncing.
         loadTodayWorkout()
     }
 
@@ -67,10 +67,16 @@ class DailyLogViewModel @Inject constructor(
         _uiState.update { currentState ->
             if (currentState.exercises.any { it.name == exerciseName }) return@update currentState
 
+            // 2. SMART BARBELL DEFAULTS
+            // If the exercise is a major barbell movement, start the weight at the empty bar setting.
+            val isBarbellMovement = listOf("Barbell", "Bench Press", "Squat", "Deadlift", "Overhead Press")
+                .any { exerciseName.contains(it, ignoreCase = true) }
+
+            val startingWeight = if (isBarbellMovement) prefs.getDefaultBarbellWeight().toFloat() else 0f
+
             val newExercise = Exercise(
                 name = exerciseName,
-                // Match WorkoutSet params: (reps: Int, setNumber: Int, weight: Float, isCompleted: Boolean)
-                sets = listOf(WorkoutSet(reps = 0, setNumber = 1, weight = 0f, isCompleted = false))
+                sets = listOf(WorkoutSet(reps = 0, setNumber = 1, weight = startingWeight, isCompleted = false))
             )
             currentState.copy(exercises = currentState.exercises + newExercise)
         }
@@ -81,8 +87,14 @@ class DailyLogViewModel @Inject constructor(
             val updatedExercises = currentState.exercises.map { exercise ->
                 if (exercise.name == exerciseName) {
                     val nextSetNumber = exercise.sets.size + 1
-                    // Match WorkoutSet params: (reps, setNumber, weight, isCompleted)
-                    exercise.copy(sets = exercise.sets + WorkoutSet(0, nextSetNumber, 0f, false))
+
+                    // 3. SMART CARRY-OVER
+                    // Automatically copy the weight and reps from the previous set so the user doesn't have to re-type it.
+                    val lastSet = exercise.sets.lastOrNull()
+                    val nextWeight = lastSet?.weight ?: 0f
+                    val nextReps = lastSet?.reps ?: 0
+
+                    exercise.copy(sets = exercise.sets + WorkoutSet(nextReps, nextSetNumber, nextWeight, false))
                 } else exercise
             }
             currentState.copy(exercises = updatedExercises)
@@ -111,7 +123,12 @@ class DailyLogViewModel @Inject constructor(
                 if (exercise.name == exerciseName) {
                     val updatedSets = exercise.sets.map { set ->
                         if (set.setNumber == setNumber) {
-                            set.copy(isCompleted = !set.isCompleted)
+                            val isNowCompleted = !set.isCompleted
+
+                            // NOTE: If you build a floating Rest Timer later,
+                            // you can trigger it right here if `isNowCompleted` && `prefs.isAutoStartRestEnabled()`
+
+                            set.copy(isCompleted = isNowCompleted)
                         } else set
                     }
                     exercise.copy(sets = updatedSets)

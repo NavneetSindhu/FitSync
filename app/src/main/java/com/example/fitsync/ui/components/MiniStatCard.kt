@@ -15,27 +15,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.fitsync.ui.theme.LocalCompactCards
 
 @Composable
 fun MiniStatCard(
     label: String,
     value: String,
-    color: Color,
-    modifier: Modifier = Modifier // Always provide a default Modifier
+    color: Color, // Still passed from Dashboard to allow for green/orange/purple variety
+    modifier: Modifier = Modifier
 ) {
+    val isCompact = LocalCompactCards.current
+
     Surface(
         modifier = modifier,
         color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(if (isCompact) 8.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Colored dot indicator
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(if (isCompact) 6.dp else 8.dp)
                     .background(color, CircleShape)
             )
 
@@ -44,14 +46,14 @@ fun MiniStatCard(
             Column {
                 Text(
                     text = label,
-                    fontSize = 10.sp,
+                    fontSize = if (isCompact) 9.sp else 10.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = value,
                     fontWeight = FontWeight.Bold,
                     color = color,
-                    fontSize = 14.sp
+                    fontSize = if (isCompact) 12.sp else 14.sp
                 )
             }
         }

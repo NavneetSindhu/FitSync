@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,6 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+
+// ── IMPORT GLOBAL PREFERENCES ──────────────────────────────────────────────
+import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
 
 // Height of the floating nav bar pill (must match MainActivity.kt constant)
 private val FLOATING_NAV_HEIGHT = 104.dp
@@ -113,6 +118,8 @@ fun ProfileScreen(
 
 @Composable
 fun ProfileHeader(uiState: ProfileUiState) {
+    val currentAccent = LocalAccentColor.current
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -120,14 +127,14 @@ fun ProfileHeader(uiState: ProfileUiState) {
         Surface(
             modifier = Modifier.size(80.dp),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer
+            color = currentAccent.copy(alpha = 0.15f) // Dynamic Avatar background
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
                     text = uiState.avatarInitial,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = currentAccent // Dynamic Avatar text
                 )
             }
         }
@@ -149,10 +156,10 @@ fun ProfileHeader(uiState: ProfileUiState) {
             Text(
                 text = uiState.planLabel,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = currentAccent, // Dynamic Plan text
                 modifier = Modifier
                     .background(
-                        MaterialTheme.colorScheme.primaryContainer,
+                        currentAccent.copy(alpha = 0.15f), // Dynamic Plan background
                         RoundedCornerShape(12.dp)
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -165,6 +172,8 @@ fun ProfileHeader(uiState: ProfileUiState) {
 
 @Composable
 fun BodyMetricsStrip(uiState: ProfileUiState) {
+    val isCompact = LocalCompactCards.current
+
     val bmi = uiState.weightKg / ((uiState.heightCm / 100f) * (uiState.heightCm / 100f))
     val bmiLabel = when {
         bmi < 18.5f -> "Underweight"
@@ -173,9 +182,9 @@ fun BodyMetricsStrip(uiState: ProfileUiState) {
         else        -> "Obese"
     }
     val bmiColor = when {
-        bmi < 18.5f -> MaterialTheme.colorScheme.tertiary
-        bmi < 25f   -> Color(0xFF4CAF50)
-        bmi < 30f   -> Color(0xFFFFA726)
+        bmi < 18.5f -> Color(0xFF1E88E5) // Blue for underweight
+        bmi < 25f   -> Color(0xFF4CAF50) // Green for normal
+        bmi < 30f   -> Color(0xFFFFA726) // Orange for overweight
         else        -> MaterialTheme.colorScheme.error
     }
 
@@ -188,7 +197,7 @@ fun BodyMetricsStrip(uiState: ProfileUiState) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = if (isCompact) 12.dp else 16.dp), // Dynamic Padding
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             MetricItem(
@@ -264,14 +273,18 @@ private fun VerticalDivider() {
 
 @Composable
 fun QuickStatsGrid(uiState: ProfileUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
+    val spacing = if (isCompact) 8.dp else 12.dp
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
         Text(
             text = "Your Stats",
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = currentAccent, // Dynamic Section Color
             modifier = Modifier.padding(start = 4.dp)
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
             StatCard(
                 modifier = Modifier.weight(1f),
                 title = "Workouts",
@@ -285,7 +298,7 @@ fun QuickStatsGrid(uiState: ProfileUiState) {
                 icon = Icons.Default.LocalFireDepartment
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing)) {
             StatCard(
                 modifier = Modifier.weight(1f),
                 title = "Volume",
@@ -309,6 +322,9 @@ fun StatCard(
     value: String,
     icon: ImageVector
 ) {
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
+
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
@@ -316,14 +332,14 @@ fun StatCard(
         shadowElevation = 2.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(if (isCompact) 12.dp else 16.dp), // Dynamic Padding
             horizontalAlignment = Alignment.Start
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                tint = currentAccent, // Dynamic Icon Tint
+                modifier = Modifier.size(if (isCompact) 20.dp else 24.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -344,6 +360,8 @@ fun StatCard(
 
 @Composable
 fun AchievementsSection(achievements: List<Achievement>) {
+    val currentAccent = LocalAccentColor.current
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -353,7 +371,7 @@ fun AchievementsSection(achievements: List<Achievement>) {
             Text(
                 text = "Achievements",
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = currentAccent,
                 modifier = Modifier.padding(start = 4.dp)
             )
             Text(
@@ -363,7 +381,11 @@ fun AchievementsSection(achievements: List<Achievement>) {
             )
         }
 
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        // 🔥 REMOVED IntrinsicSize.Max to stop the crash
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             items(achievements) { achievement ->
                 AchievementChip(achievement = achievement)
             }
@@ -373,8 +395,9 @@ fun AchievementsSection(achievements: List<Achievement>) {
 
 @Composable
 fun AchievementChip(achievement: Achievement) {
+    val currentAccent = LocalAccentColor.current
     val containerColor = if (achievement.unlocked)
-        MaterialTheme.colorScheme.primaryContainer
+        currentAccent.copy(alpha = 0.15f)
     else
         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
 
@@ -383,31 +406,36 @@ fun AchievementChip(achievement: Achievement) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = containerColor,
-        modifier = Modifier.width(110.dp)
+        modifier = Modifier
+            .width(115.dp)
+            .height(130.dp) // 🔥 Fixed height ensures all cards look uniform and prevents crash
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = achievement.emoji,
                 fontSize = 28.sp,
                 modifier = Modifier.graphicsLayerAlpha(contentAlpha)
             )
+            Spacer(Modifier.height(4.dp))
             Text(
                 text = achievement.title,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
+                maxLines = 1 // Keeps title clean
             )
             Text(
                 text = achievement.description,
                 style = MaterialTheme.typography.labelSmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = contentAlpha),
-                lineHeight = 14.sp
+                lineHeight = 13.sp,
+                maxLines = 2 // Limits description height for uniformity
             )
         }
     }
@@ -429,12 +457,14 @@ fun SettingsSection(
     onWeightUnitChange: (String) -> Unit,
     onCloudSync: () -> Unit
 ) {
+    val currentAccent = LocalAccentColor.current
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // ── Account group ──────────────────────────────────────────────────────
-        SectionLabel("Account")
+        SectionLabel("Account", currentAccent)
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -452,7 +482,7 @@ fun SettingsSection(
                     icon = Icons.Default.EmojiEvents,
                     title = "Fitness Goal",
                     subtitle = uiState.fitnessGoal,
-                    iconTint = MaterialTheme.colorScheme.primary,
+                    iconTint = currentAccent, // Dynamic Color
                     onClick = onEditPersonalDetails
                 )
             }
@@ -461,7 +491,7 @@ fun SettingsSection(
         Spacer(Modifier.height(8.dp))
 
         // ── Preferences group ──────────────────────────────────────────────────
-        SectionLabel("Preferences")
+        SectionLabel("Preferences", currentAccent)
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -474,6 +504,7 @@ fun SettingsSection(
                     title = "Workout Reminders",
                     subtitle = "Daily push notifications",
                     checked = uiState.notificationsEnabled,
+                    accentColor = currentAccent,
                     onCheckedChange = onToggleNotifications
                 )
                 MenuDivider()
@@ -483,12 +514,14 @@ fun SettingsSection(
                     title = "Rest Timer",
                     subtitle = "Auto-start after each set",
                     checked = uiState.restTimerEnabled,
+                    accentColor = currentAccent,
                     onCheckedChange = onToggleRestTimer
                 )
                 MenuDivider()
                 // Weight unit picker
                 WeightUnitMenuItem(
                     currentUnit = uiState.weightUnit,
+                    accentColor = currentAccent,
                     onUnitChange = onWeightUnitChange
                 )
             }
@@ -497,7 +530,7 @@ fun SettingsSection(
         Spacer(Modifier.height(8.dp))
 
         // ── Data group ─────────────────────────────────────────────────────────
-        SectionLabel("Data")
+        SectionLabel("Data", currentAccent)
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface,
@@ -506,6 +539,7 @@ fun SettingsSection(
             Column {
                 CloudSyncMenuItem(
                     syncStatus = uiState.syncStatus,
+                    accentColor = currentAccent,
                     onClick = onCloudSync
                 )
                 MenuDivider()
@@ -521,11 +555,11 @@ fun SettingsSection(
 }
 
 @Composable
-private fun SectionLabel(text: String) {
+private fun SectionLabel(text: String, color: Color) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
+        color = color,
         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
     )
 }
@@ -595,6 +629,7 @@ fun ToggleMenuItem(
     title: String,
     subtitle: String,
     checked: Boolean,
+    accentColor: Color,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -632,15 +667,15 @@ fun ToggleMenuItem(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                checkedThumbColor = Color.White,
+                checkedTrackColor = accentColor // Dynamic Switch Color
             )
         )
     }
 }
 
 @Composable
-fun WeightUnitMenuItem(currentUnit: String, onUnitChange: (String) -> Unit) {
+fun WeightUnitMenuItem(currentUnit: String, accentColor: Color, onUnitChange: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -672,7 +707,6 @@ fun WeightUnitMenuItem(currentUnit: String, onUnitChange: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        // Segmented-style pill toggle
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
@@ -685,7 +719,7 @@ fun WeightUnitMenuItem(currentUnit: String, onUnitChange: (String) -> Unit) {
                     modifier = Modifier
                         .clip(RoundedCornerShape(50))
                         .background(
-                            if (selected) MaterialTheme.colorScheme.primary
+                            if (selected) accentColor // Dynamic Selection Color
                             else Color.Transparent
                         )
                         .clickable { onUnitChange(unit) }
@@ -695,8 +729,9 @@ fun WeightUnitMenuItem(currentUnit: String, onUnitChange: (String) -> Unit) {
                         text = unit,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = if (selected) Color.White
-                        else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (selected) {
+                            if (accentColor.luminance() > 0.4f) Color.Black else Color.White
+                        } else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -705,7 +740,7 @@ fun WeightUnitMenuItem(currentUnit: String, onUnitChange: (String) -> Unit) {
 }
 
 @Composable
-fun CloudSyncMenuItem(syncStatus: SyncStatus, onClick: () -> Unit) {
+fun CloudSyncMenuItem(syncStatus: SyncStatus, accentColor: Color, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -721,7 +756,7 @@ fun CloudSyncMenuItem(syncStatus: SyncStatus, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.CloudSync,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = accentColor, // Dynamic Icon
                 modifier = Modifier.padding(8.dp)
             )
         }
@@ -755,7 +790,7 @@ fun CloudSyncMenuItem(syncStatus: SyncStatus, onClick: () -> Unit) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(18.dp),
                         strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.primary
+                        color = accentColor // Dynamic Spinner
                     )
                 else ->
                     Icon(
@@ -818,6 +853,8 @@ fun PersonalDetailsDialog(
     onDismiss: () -> Unit,
     onSave: (Int, Float, Float, String, String) -> Unit
 ) {
+    val currentAccent = LocalAccentColor.current
+
     var age     by remember { mutableStateOf(uiState.age.toString()) }
     var weight  by remember { mutableStateOf(uiState.weightKg.toString()) }
     var height  by remember { mutableStateOf(uiState.heightCm.toString()) }
@@ -842,7 +879,8 @@ fun PersonalDetailsDialog(
                 Text(
                     "Personal Details",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = currentAccent // Dialog title matches accent
                 )
 
                 // Age
@@ -852,7 +890,8 @@ fun PersonalDetailsDialog(
                     label = { Text("Age") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = currentAccent)
                 )
 
                 // Weight
@@ -862,7 +901,8 @@ fun PersonalDetailsDialog(
                     label = { Text("Weight (${uiState.weightUnit})") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = currentAccent)
                 )
 
                 // Height
@@ -872,7 +912,8 @@ fun PersonalDetailsDialog(
                     label = { Text("Height (cm)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = currentAccent)
                 )
 
                 // Gender pill selector
@@ -881,7 +922,7 @@ fun PersonalDetailsDialog(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                PillSelector(options = genders, selected = gender, onSelect = { gender = it })
+                PillSelector(options = genders, selected = gender, accentColor = currentAccent, onSelect = { gender = it })
 
                 // Goal pill selector
                 Text(
@@ -889,7 +930,7 @@ fun PersonalDetailsDialog(
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                PillSelector(options = goals, selected = goal, onSelect = { goal = it })
+                PillSelector(options = goals, selected = goal, accentColor = currentAccent, onSelect = { goal = it })
 
                 // Actions
                 Row(
@@ -899,7 +940,7 @@ fun PersonalDetailsDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
-                    ) { Text("Cancel") }
+                    ) { Text("Cancel", color = MaterialTheme.colorScheme.onSurface) }
 
                     Button(
                         onClick = {
@@ -911,47 +952,65 @@ fun PersonalDetailsDialog(
                                 goal
                             )
                         },
-                        modifier = Modifier.weight(1f)
-                    ) { Text("Save") }
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentAccent) // Dynamic Save Button
+                    ) {
+                        Text("Save", color = if (currentAccent.luminance() > 0.4f) Color.Black else Color.White)
+                    }
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class) // Needed for FlowRow
 @Composable
 private fun PillSelector(
     options: List<String>,
     selected: String,
+    accentColor: Color,
     onSelect: (String) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // 🔥 Uses FlowRow to wrap items. MaxItemsInEachRow = 2 ensures your 2-then-1 layout.
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        maxItemsInEachRow = 2
+    ) {
         options.forEach { option ->
             val isSelected = selected == option
             Box(
                 modifier = Modifier
+                    .weight(1f) // Makes the 2 items in a row equal width
                     .clip(RoundedCornerShape(50))
                     .border(
                         width = 1.5.dp,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                        color = if (isSelected) accentColor
                         else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(50)
                     )
                     .background(
-                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        if (isSelected) accentColor.copy(alpha = 0.15f)
                         else Color.Transparent
                     )
                     .clickable { onSelect(option) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = option,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                    color = if (isSelected) accentColor
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+
+
+        if (options.size % 2 != 0) {
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

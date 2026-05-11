@@ -18,40 +18,37 @@ fun HomeActionCard(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    // Defaulting iconColor to Primary ensures it adapts to Light/Dark automatically
-    iconColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val currentAccent = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current
+
     FitSyncCard(
         modifier = modifier,
-        onClick = onClick,
-        // Ensure FitSyncCard internal container uses MaterialTheme.colorScheme.surface
+        onClick = onClick
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            // Icon with circular tinted background
-            // The 0.1f alpha works great on both light and dark backgrounds
+        Column(modifier = Modifier.padding(if (isCompact) 16.dp else 24.dp)) {
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .background(iconColor.copy(alpha = 0.12f), CircleShape),
+                    .size(if (isCompact) 40.dp else 48.dp)
+                    .background(currentAccent.copy(alpha = 0.12f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
+                    tint = currentAccent,
+                    modifier = Modifier.size(if (isCompact) 20.dp else 24.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 16.dp else 20.dp))
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = if (isCompact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                // THE FIX: Use onSurface so it turns White in Dark Mode and Navy in Light Mode
                 color = MaterialTheme.colorScheme.onSurface
             )
 
@@ -60,7 +57,6 @@ fun HomeActionCard(
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
-                // THE FIX: Use onSurfaceVariant for that "Muted" look in both modes
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

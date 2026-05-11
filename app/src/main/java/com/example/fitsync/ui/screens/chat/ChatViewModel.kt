@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fitsync.data.local.ImageStorageHelper
+import com.example.fitsync.data.local.PreferenceManager // <-- INJECTED
 import com.example.fitsync.data.remote.GeminiService
 import com.example.fitsync.data.repository.ChatRepository
 import com.example.fitsync.domain.model.chat.ChatMessage
@@ -27,14 +28,13 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     private val geminiService: GeminiService,
     private val chatRepository: ChatRepository,
+    private val prefs: PreferenceManager, // 1. INJECT PREFERENCES
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val todayDateString = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-    // --- NEW: The Current User ID ---
     // For now, we hardcode this to match the PostgreSQL user we created.
-    // TODO: Later, fetch this from DataStore or AuthRepository when a user logs in.
     private val currentUserId = 1L
 
     val messages: StateFlow<List<ChatMessage>> = chatRepository.getMessagesForToday(todayDateString)
@@ -48,16 +48,33 @@ class ChatViewModel @Inject constructor(
     val isTyping: StateFlow<Boolean> = _isTyping.asStateFlow()
 
     init {
-        // --- NEW: Sync on Startup ---
         // Fetch history from Spring Boot when the screen opens
         viewModelScope.launch {
             chatRepository.fetchChatsFromServer(currentUserId)
         }
     }
 
+    // --- 2. INVISIBLE AI CONTEXT ---
+    // This secretly attaches the user's settings to their prompt so Gemini knows
+    // exactly who it's talking to without ruining the UI message bubble.
+    private fun buildEnrichedPrompt(rawText: String): String {
+        val name = prefs.getUserName()
+        val goal = prefs.getUserGoal()
+        val unit = if (prefs.isMetric()) "kg" else "lbs"
+
+        return """
+            [System Instructions: The user you are talking to is named $name. 
+            Their primary fitness goal is to "$goal". 
+            They use $unit for weight tracking. Tailor your advice to fit these parameters.]
+            
+            User Message: $rawText
+        """.trimIndent()
+    }
+
     fun sendTextMessage(text: String) {
         if (text.isBlank()) return
 
+        // 3. Save the clean, normal text to the database (This is what the user sees in the UI)
         val userMessage = ChatMessage(
             id = UUID.randomUUID().toString(),
             text = text,
@@ -65,12 +82,13 @@ class ChatViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            // UPDATED: Pass currentUserId
             chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
 
             _isTyping.value = true
 
-            val result = geminiService.sendChatMessage(text)
+            // 4. Send the ENRICHED text to Gemini (This is what the AI sees)
+            val enrichedPrompt = buildEnrichedPrompt(text)
+            val result = geminiService.sendChatMessage(enrichedPrompt)
 
             result.onSuccess { reply ->
                 saveBotMessage(reply)
@@ -91,6 +109,7 @@ class ChatViewModel @Inject constructor(
                 ImageStorageHelper.saveBitmapToCache(context, bitmap)
             }
 
+            // Save clean message to DB
             val userMessage = ChatMessage(
                 id = UUID.randomUUID().toString(),
                 text = displayMessage,
@@ -98,12 +117,13 @@ class ChatViewModel @Inject constructor(
                 imageLocalPath = savedImagePath
             )
 
-            // UPDATED: Pass currentUserId
             chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
 
             _isTyping.value = true
 
-            val result = geminiService.analyzeMealImage(bitmap, userPrompt)
+            // Send ENRICHED prompt to Gemini Vision so it calculates macros based on the user's goals
+            val enrichedPrompt = buildEnrichedPrompt(displayMessage)
+            val result = geminiService.analyzeMealImage(bitmap, enrichedPrompt)
 
             result.onSuccess { parsedMacros ->
                 if (parsedMacros.isFood) {
@@ -116,7 +136,6 @@ class ChatViewModel @Inject constructor(
                         estimatedQuantity = parsedMacros.estimatedQuantity,
                         macros = parsedMacros
                     )
-                    // UPDATED: Pass currentUserId
                     chatRepository.insertMessage(botMessage, todayDateString, currentUserId)
                 } else {
                     saveBotMessage(parsedMacros.nonFoodMessage)
@@ -137,7 +156,6 @@ class ChatViewModel @Inject constructor(
             text = text,
             sentByUser = false
         )
-        // UPDATED: Pass currentUserId
         chatRepository.insertMessage(msg, todayDateString, currentUserId)
     }
 

@@ -1,10 +1,8 @@
 package com.example.fitsync.ui.screens.auth
 
 import android.annotation.SuppressLint
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -34,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.fitsync.R
 import com.example.fitsync.ui.theme.LocalAccentColor
+import com.example.fitsync.ui.theme.LocalCompactCards
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -59,13 +58,14 @@ private val CarouselCaptions = listOf(
 // ─── MAIN SCREEN ──────────────────────────────────────────────────────────────
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val accent    = LocalAccentColor.current
+    val isCompact = LocalCompactCards.current // Use this if you want snugger UI inputs
     val uiState   by viewModel.uiState.collectAsState()
     val context   = LocalContext.current
 
@@ -82,8 +82,13 @@ fun AuthScreen(
     val currentMode = modeStack.last()
 
     fun pushMode(mode: AuthSheetMode) { modeStack.add(mode) }
-    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-    fun popMode()  { if (modeStack.size > 1) modeStack.removeLast() }
+
+    // 🔥 SAFE FALLBACK: Removes the last item cleanly without requiring API 35
+    fun popMode() {
+        if (modeStack.size > 1) {
+            modeStack.removeAt(modeStack.size - 1)
+        }
+    }
 
     val pagerState = rememberPagerState(pageCount = { GymCarouselImages.size })
     LaunchedEffect(Unit) {
@@ -290,7 +295,7 @@ fun AuthScreen(
                                 ) {
                                     IconButton(onClick = { popMode() }) {
                                         Icon(
-                                            imageVector = androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack,
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                             contentDescription = "Back",
                                             tint = MaterialTheme.colorScheme.onSurface
                                         )

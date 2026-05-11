@@ -8,13 +8,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.fitsync.ui.theme.LocalCompactCards
 
 @Composable
 fun FitSyncCard(
-    modifier: Modifier = Modifier, // Added default value for safety
+    modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val isCompact = LocalCompactCards.current
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -22,13 +25,11 @@ fun FitSyncCard(
                 if (onClick != null) Modifier.clickable { onClick() }
                 else Modifier
             ),
-        shape = RoundedCornerShape(24.dp),
-        // THE FIX: Use surface token so it flips colors automatically
+        shape = RoundedCornerShape(if (isCompact) 16.dp else 24.dp), // Card roundness follows compact setting
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        // Elevated elevation looks great in 2026 for depth
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         content = content
     )

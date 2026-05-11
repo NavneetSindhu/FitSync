@@ -2,6 +2,7 @@ package com.example.fitsync.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.fitsync.data.local.PreferenceManager
 import com.example.fitsync.data.repository.WorkoutRepository
 import com.example.fitsync.domain.model.WorkoutSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,11 +19,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val workoutRepository: WorkoutRepository
+    private val workoutRepository: WorkoutRepository,
+    private val prefs: PreferenceManager // 1. INJECT PREFERENCES HERE
 ) : ViewModel() {
 
-    // Keep your user name logic here (this can eventually come from Firebase!)
-    private val _userName = MutableStateFlow("Navneet")
+    // 2. LOAD REAL USERNAME FROM SETTINGS
+    private val _userName = MutableStateFlow(prefs.getUserName())
     val userName: StateFlow<String> = _userName.asStateFlow()
 
     // --- THE REAL DATA ENGINE ---
@@ -31,13 +33,16 @@ class HomeViewModel @Inject constructor(
         .map { workouts ->
             val calendarData = mutableMapOf<LocalDate, WorkoutSummary>()
 
+            // 3. READ THE DYNAMIC WEIGHT UNIT (KG vs LBS)
+            val weightUnitString = if (prefs.isMetric()) "kg" else "lbs"
+
             workouts.forEach { workout ->
-                // 1. Convert the Long timestamp to a LocalDate for the Heatmap
+                // Convert the Long timestamp to a LocalDate for the Heatmap
                 val date = Instant.ofEpochMilli(workout.date)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
 
-                // 2. Crunch the numbers for Volume and Sets
+                // Crunch the numbers for Volume and Sets
                 var totalVolume = 0.0
                 var totalSets = 0
 
@@ -48,7 +53,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }
 
-                // 3. Calculate intensity for the Heatmap colors (0 to 4)
+                // Calculate intensity for the Heatmap colors (0 to 4)
                 val intensityLevel = when {
                     totalSets == 0 -> 0
                     totalSets in 1..5 -> 1
@@ -57,10 +62,10 @@ class HomeViewModel @Inject constructor(
                     else -> 4
                 }
 
-                // 4. Save it into the map!
+                // 4. APPLY THE DYNAMIC UNIT TO THE SUMMARY
                 calendarData[date] = WorkoutSummary(
                     intensity = intensityLevel,
-                    volume = "${totalVolume.toInt()} kg",
+                    volume = "${totalVolume.toInt()}$weightUnitString",
                     sets = totalSets
                 )
             }
@@ -72,4 +77,12 @@ class HomeViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyMap()
         )
+
+    /**
+     * Call this from the UI if the user navigates back from the Settings screen
+     * to ensure the Dashboard greeting updates immediately without an app restart.
+     */
+    fun refreshUserData() {
+        _userName.value = prefs.getUserName()
+    }
 }
