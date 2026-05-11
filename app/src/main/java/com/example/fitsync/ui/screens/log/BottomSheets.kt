@@ -228,7 +228,6 @@ fun CreateWorkoutBottomSheet(
                 fontWeight = FontWeight.ExtraBold
             )
 
-            // 🔥 UPDATED: Using FitSyncFilterChip
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

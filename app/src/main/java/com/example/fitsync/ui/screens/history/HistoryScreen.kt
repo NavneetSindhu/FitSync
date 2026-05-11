@@ -2,6 +2,7 @@ package com.example.fitsync.ui.screens.history
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,8 +44,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
-
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     onBackClick: () -> Unit,
@@ -53,51 +54,53 @@ fun HistoryScreen(
     val weightUnit by viewModel.weightUnit.collectAsState()
     val workouts by viewModel.workoutHistory.collectAsState(initial = emptyList())
 
-    // ── 1. GRAB GLOBAL SETTINGS ──────────────────────────────────────────────
     val currentAccent = LocalAccentColor.current
     val isCompact = LocalCompactCards.current
 
-    // --- STATE FOR BOTTOM SHEET ---
-    var selectedExerciseDetails by remember { mutableStateOf<Pair<String, List<Exercise>>?>(null) }
+    var selectedExerciseDetails by remember { mutableStateOf<Pair<String, List<Pair<Long, Exercise>>>?>(null) }
+
+    // --- DELETE CONFIRMATION STATE ---
+    var workoutToDelete by remember { mutableStateOf<WorkoutSession?>(null) }
 
     var selectedMonth by remember { mutableStateOf("All") }
-    var selectedExercise by remember { mutableStateOf("All") }
+    var selectedWorkoutType by remember { mutableStateOf("All") }
 
     val monthFormatter = remember { SimpleDateFormat("MMMM", Locale.getDefault()) }
+    val dayFormatter = remember { SimpleDateFormat("EEEE, MMM d", Locale.getDefault()) }
 
+    // Derive filter options
     val availableMonths = remember(workouts) {
         listOf("All") + workouts.map { monthFormatter.format(Date(it.date)) }.distinct()
     }
+    val workoutTypes = listOf("All", "Push", "Pull", "Legs", "Full Body", "Custom")
 
-    val availableExercises = remember(workouts) {
-        listOf("All") + workouts.flatMap { it.exercise.map { ex -> ex.name } }.distinct()
+    val groupedWorkouts = remember(workouts, selectedMonth, selectedWorkoutType) {
+        workouts
+            .filter { workout ->
+                val monthMatch = selectedMonth == "All" || monthFormatter.format(Date(workout.date)) == selectedMonth
+                val typeMatch = selectedWorkoutType == "All" || workout.name.contains(selectedWorkoutType, ignoreCase = true)
+                monthMatch && typeMatch
+            }
+            .sortedByDescending { it.date }
+            .groupBy { dayFormatter.format(Date(it.date)) }
     }
 
-    val filteredWorkouts = remember(workouts, selectedMonth, selectedExercise) {
-        workouts.filter { workout ->
-            val workoutMonth = monthFormatter.format(Date(workout.date))
-            val monthMatch = selectedMonth == "All" || workoutMonth == selectedMonth
-            val exerciseMatch = selectedExercise == "All" || workout.exercise.any { it.name == selectedExercise }
-            monthMatch && exerciseMatch
-        }
-    }
-
-    val totalVolume = remember(filteredWorkouts) {
-        filteredWorkouts.sumOf { workout ->
-            workout.exercise.sumOf { ex ->
+    val totalVolume = remember(groupedWorkouts) {
+        groupedWorkouts.values.flatten().sumOf { session ->
+            session.exercise.sumOf { ex ->
                 ex.sets.sumOf { (it.weight * it.reps).toDouble() }
             }
         }.toInt()
     }
 
-    // Helper function to fetch and prepare history for the graph
     fun openExerciseGraph(exerciseName: String) {
-        val history = workouts
+        val historyWithDates = workouts
             .filter { session -> session.exercise.any { it.name == exerciseName } }
             .sortedBy { it.date }
-            .map { session -> session.exercise.first { it.name == exerciseName } }
-
-        selectedExerciseDetails = Pair(exerciseName, history)
+            .map { session ->
+                Pair(session.date, session.exercise.first { it.name == exerciseName })
+            }
+        selectedExerciseDetails = Pair(exerciseName, historyWithDates)
     }
 
     Scaffold(
@@ -108,86 +111,127 @@ fun HistoryScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
-                },
-                windowInsets = WindowInsets.statusBars
+                }
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Filter Chips
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(modifier = Modifier.padding(bottom = 8.dp)) {
-                FilterChipRow(
-                    items = availableMonths,
-                    selectedItem = selectedMonth,
-                    accentColor = currentAccent
-                ) { selectedMonth = it }
-
-                FilterChipRow(
-                    items = availableExercises,
-                    selectedItem = selectedExercise,
-                    accentColor = currentAccent
-                ) { selectedExercise = it }
+                FilterChipRow(availableMonths, selectedMonth, currentAccent) { selectedMonth = it }
+                FilterChipRow(workoutTypes, selectedWorkoutType, currentAccent) { selectedWorkoutType = it }
             }
 
-            if (filteredWorkouts.isEmpty()) {
+            if (groupedWorkouts.isEmpty()) {
                 EmptyHistoryState(Modifier.weight(1f))
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(if (isCompact) 8.dp else 12.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item {
                         HistorySummaryHeader(
-                            count = filteredWorkouts.size,
+                            count = groupedWorkouts.values.flatten().size,
                             volume = totalVolume,
                             accentColor = currentAccent,
                             unit = weightUnit,
                             isCompact = isCompact
                         )
+                        Spacer(Modifier.height(16.dp))
                     }
 
-                    items(items = filteredWorkouts, key = { it.id }) { workout ->
-                        SwipeActionContainer(
-                            onDelete = { viewModel.deleteWorkout(workout) },
-                            onEdit = { onEditWorkout(workout) }
-                        ) {
-                            HistoryWorkoutCard(
-                                workout = workout,
-                                unit = weightUnit, // Correctly pass dynamic unit
-                                modifier = Modifier.clickable {
-                                    if (workout.exercise.isNotEmpty()) {
-                                        openExerciseGraph(workout.exercise.first().name)
-                                    }
-                                },
-                                onExerciseClick = { exerciseName ->
-                                    openExerciseGraph(exerciseName)
-                                }
-                            )
+                    groupedWorkouts.forEach { (date, sessions) ->
+                        stickyHeader {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.background)
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = date.uppercase(),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = currentAccent.copy(alpha = 0.7f),
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                        }
+
+                        items(sessions, key = { it.id }) { workout ->
+                            SwipeActionContainer(
+                                onDelete = { workoutToDelete = workout }, // Trigger Dialog
+                                onEdit = { onEditWorkout(workout) }
+                            ) {
+                                HistoryWorkoutCard(
+                                    workout = workout,
+                                    unit = weightUnit,
+                                    onExerciseClick = { exerciseName -> openExerciseGraph(exerciseName) }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // --- BOTTOM SHEET TRIGGER ---
-        selectedExerciseDetails?.let { (name, history) ->
+        // --- DELETE DIALOG ---
+        workoutToDelete?.let { session ->
+            AlertDialog(
+                onDismissRequest = { workoutToDelete = null },
+                // M3 AlertDialog centers the icon slot by default
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(28.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        text = "Delete Workout?",
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to delete this ${session.name} session? This action cannot be undone.",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteWorkout(session)
+                            workoutToDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete", color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { workoutToDelete = null }) {
+                        Text("Cancel", color = currentAccent)
+                    }
+                }
+            )
+        }
+
+        selectedExerciseDetails?.let { (name, historyWithDates) ->
             ExerciseDetailBottomSheet(
                 exerciseName = name,
-                history = history,
-                weightUnit = weightUnit, // Pass the unit to the graph sheet
+                historyWithDates = historyWithDates,
+                weightUnit = weightUnit,
                 onDismiss = { selectedExerciseDetails = null }
             )
         }
     }
 }
-
 @Composable
 fun SwipeActionContainer(
     onDelete: () -> Unit,

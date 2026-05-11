@@ -25,6 +25,7 @@ data class Exercise(
 data class WorkoutSession(
     @PrimaryKey(autoGenerate = true)
     val id:Long,
+    val name:String,
     val date:Long = System.currentTimeMillis(),
     val exercise:List<Exercise>,
     val isSynced: Boolean = false

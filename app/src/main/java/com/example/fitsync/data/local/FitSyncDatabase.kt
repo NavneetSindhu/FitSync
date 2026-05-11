@@ -12,7 +12,7 @@ import com.example.fitsync.domain.model.WorkoutSession
 
 // 1. ADDED ChatMessageEntity::class to the entities array!
 // 2. BUMPED version to 4 to trigger the creation of the new table.
-@Database(entities = [WorkoutSession::class, ChatMessageEntity::class], version = 4, exportSchema = false)
+@Database(entities = [WorkoutSession::class, ChatMessageEntity::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class FitSyncDatabase : RoomDatabase() {
 

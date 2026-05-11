@@ -1,5 +1,6 @@
 package com.example.fitsync.ui.screens.home
 
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,17 +43,19 @@ import java.time.LocalDate
 
 private val FLOATING_NAV_HEIGHT = 104.dp
 
+// ... (imports remain the same)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onSettingsClick: () -> Unit,
     onHistoryClick: () -> Unit,
+    onStartWorkout: (String) -> Unit, // ── 1. ADD NAVIGATION CALLBACK ──
     viewModel: DailyLogViewModel = hiltViewModel(),
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-
-    // --- REAL DATA PIPELINE ---
     val userName by homeViewModel.userName.collectAsState()
     val workoutHistory by homeViewModel.workoutHistory.collectAsState()
 
@@ -61,11 +65,9 @@ fun HomeScreen(
     var showAddExerciseSheet by remember { mutableStateOf(false) }
     var showCreateWorkoutSheet by remember { mutableStateOf(false) }
 
-    // Read global settings
     val currentAccent = LocalAccentColor.current
     val isCompact = LocalCompactCards.current
 
-    // Put this right inside the HomeScreen composable
     LaunchedEffect(Unit) {
         homeViewModel.refreshUserData()
     }
@@ -78,7 +80,7 @@ fun HomeScreen(
                         Text(
                             text = "FitSync",
                             fontWeight = FontWeight.ExtraBold,
-                            color = currentAccent, // Matches accent
+                            color = currentAccent,
                             fontSize = 22.sp
                         )
                         Text(
@@ -110,11 +112,12 @@ fun HomeScreen(
                         if (targetPage == 0) showCreateWorkoutSheet = true
                         else showAddExerciseSheet = true
                     },
-                    containerColor = currentAccent, // Dynamic Accent Color
-                    contentColor = if (currentAccent.luminance() > 0.4f) Color.Black else Color.White,
+                    containerColor = currentAccent,
+                    // 🔥 SMART TEXT COLOR: Flips to black if the accent is too bright
+                    contentColor = if (currentAccent.luminance() > 0.45f) Color.Black else Color.White,
                     shape = CircleShape,
                     modifier = Modifier.padding(bottom = FLOATING_NAV_HEIGHT),
-                    icon = { Icon(if (targetPage == 0) Icons.Default.PlayArrow else Icons.Default.Add, contentDescription = null) },
+                    icon = { Icon(if (targetPage == 0) Icons.Default.PlayArrow else Icons.Default.Add, null) },
                     text = { Text(if (targetPage == 0) "Start Workout" else "Add Exercise", fontWeight = FontWeight.Bold) }
                 )
             }
@@ -128,23 +131,38 @@ fun HomeScreen(
         ) {
             PillTabRow(
                 selectedTabIndex = pagerState.currentPage,
-                onTabSelected = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
-                accentColor = currentAccent // Pass accent
+                onTabSelected = { index ->
+                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                },
+                accentColor = currentAccent
             )
 
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.Top,
-                userScrollEnabled = false
+                userScrollEnabled = false // Pager strictly controlled by buttons
             ) { page ->
                 when (page) {
                     0 -> StatsTabContent(userName = userName, workoutMap = workoutHistory)
-                    1 -> LoggingScreen(
-                        viewModel = viewModel,
-                        uiState = uiState,
-                        onFinishWorkout = {}
-                    )
+                    1 -> Column(modifier = Modifier.fillMaxSize()) {
+                        // 2. EDITABLE HEADER FOR THE TODAY TAB
+                        WorkoutNameHeader(
+                            workoutName = uiState.workoutName,
+                            onNameChange = { newName -> viewModel.startWorkoutSession(newName) },
+                            accentColor = currentAccent
+                        )
+
+                        LoggingScreen(
+                            viewModel = viewModel,
+                            uiState = uiState,
+                            onFinishWorkout = {
+                                viewModel.saveWorkout()
+                                Toast.makeText(context, "Workout Saved to History! 💪", Toast.LENGTH_SHORT).show()
+
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -162,8 +180,12 @@ fun HomeScreen(
         if (showCreateWorkoutSheet) {
             CreateWorkoutBottomSheet(
                 onDismiss = { showCreateWorkoutSheet = false },
-                onStartWorkout = { _, _ ->
+                onStartWorkout = { finalName, isCustom ->
+                    // ── 2. LOGIC SYNC ──
+                    // Update the session name in the ViewModel
+                    onStartWorkout(finalName)
                     showCreateWorkoutSheet = false
+                    // Swipe the pager to the "Today" logging tab
                     coroutineScope.launch { pagerState.animateScrollToPage(1) }
                 }
             )
@@ -171,6 +193,67 @@ fun HomeScreen(
     }
 }
 
+
+@Composable
+fun WorkoutNameHeader(
+    workoutName: String,
+    onNameChange: (String) -> Unit,
+    accentColor: Color
+) {
+    var isEditing by remember { mutableStateOf(false) }
+    var textValue by remember(workoutName) { mutableStateOf(workoutName) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        if (isEditing) {
+            OutlinedTextField(
+                value = textValue,
+                onValueChange = { textValue = it },
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = accentColor,
+                    unfocusedBorderColor = accentColor.copy(alpha = 0.5f)
+                ),
+                trailingIcon = {
+                    IconButton(onClick = {
+                        onNameChange(textValue)
+                        isEditing = false
+                    }) {
+                        Icon(Icons.Default.Check, contentDescription = "Done", tint = accentColor)
+                    }
+                }
+            )
+        } else {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { isEditing = true },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = workoutName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit Name",
+                    modifier = Modifier.size(16.dp),
+                    tint = accentColor.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
 @Composable
 fun PillTabRow(selectedTabIndex: Int, onTabSelected: (Int) -> Unit, accentColor: Color) {
     val tabs = listOf("Stats", "Today")
