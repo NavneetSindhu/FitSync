@@ -54,10 +54,16 @@ fun FitSyncNavGraph(
             })
         }
         composable<Home> {
+            val dailyLogViewModel: DailyLogViewModel = hiltViewModel()
+
             // Note: HomeScreen now contains LoggingScreen inside its Pager
             HomeScreen(
                 onSettingsClick = { navController.navigate(Settings) },
-                onHistoryClick = { navController.navigate(History) }
+                onHistoryClick = { navController.navigate(History) },
+                onStartWorkout = { finalName ->
+                    dailyLogViewModel.startWorkoutSession(finalName)
+                    navController.navigate(DailyLog)
+                }
             )
         }
 
