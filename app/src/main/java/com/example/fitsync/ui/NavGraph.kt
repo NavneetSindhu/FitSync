@@ -43,7 +43,7 @@ fun FitSyncNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Auth
+        startDestination = Home
     ) {
 
         composable<Splash> {
@@ -61,8 +61,7 @@ fun FitSyncNavGraph(
                 onSettingsClick = { navController.navigate(Settings) },
                 onHistoryClick = { navController.navigate(History) },
                 onStartWorkout = { finalName ->
-                    dailyLogViewModel.startWorkoutSession(finalName)
-                    navController.navigate(DailyLog)
+
                 }
             )
         }

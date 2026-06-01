@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.fitsync.domain.model.chat.ChatMessage
 import com.example.fitsync.domain.model.chat.Macros
+import com.example.fitsync.ui.components.shimmer
 import com.example.fitsync.ui.theme.LocalAccentColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -138,7 +139,7 @@ fun ChatScreen(
             }
 
             if (isTyping) {
-                item { TypingIndicator(currentAccent) }
+                item { AIShimmerPlaceholder(accentColor = currentAccent)}
             }
         }
 
@@ -492,6 +493,50 @@ fun ChatInputBar(
                     )
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+fun AIShimmerPlaceholder(accentColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.Bottom
+    ) {
+        // Mock Avatar Circle matching BotMessageBubble structure
+        Surface(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .shimmer(accentColor),
+            color = Color.Transparent
+        ) {}
+
+        Spacer(Modifier.width(8.dp))
+
+        // Mock Text blocks matching Chat Surface look
+        Column(
+            modifier = Modifier.fillMaxWidth(0.75f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(12.dp, 12.dp, 12.dp, 4.dp))
+                    .shimmer(accentColor)
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp, 12.dp, 12.dp, 12.dp))
+                    .shimmer(accentColor)
+            )
         }
     }
 }

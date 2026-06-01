@@ -7,8 +7,10 @@ import com.example.fitsync.data.remote.ChatSyncPayload
 import com.example.fitsync.data.remote.FitSyncApi
 import com.example.fitsync.data.remote.UserIdPayload
 import com.example.fitsync.domain.model.chat.ChatMessage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 // --- 1. THE INTERFACE ---
@@ -49,28 +51,36 @@ class ChatRepositoryImpl @Inject constructor(
 
     // 3. Save Locally + Sync to Cloud
     override suspend fun insertMessage(message: ChatMessage, dateString: String, userId: Long) {
-        // 1. Save locally for instant UI response
-        chatDao.insertMessage(message.toEntity(dateString))
+        // 1. Immediately drop it into Room to satisfy UI observation stream (Zero lag)
+        chatRepositoryContextRun {
+            chatDao.insertMessage(message.toEntity(dateString))
+        }
 
-        // 2. Try to sync to PostgreSQL
-        try {
-            // --- NEW: Translate UI Model to Network Payload ---
-            val networkPayload = ChatSyncPayload(
-                messageText = message.text,
-                sentByUser = message.sentByUser,
-                macrosJson = null, // TODO: We can serialize your macros here later!
-                timestamp = System.currentTimeMillis(),
-                user = UserIdPayload(id = userId)
-            )
+        // 2. Wrap the network server sync call inside an isolated IO scope
+        // so a slow Spring server won't hold hostage the local view presentation
+        withContext(Dispatchers.IO) {
+            try {
+                val networkPayload = ChatSyncPayload(
+                    messageText = message.text,
+                    sentByUser = message.sentByUser,
+                    macrosJson = null,
+                    timestamp = System.currentTimeMillis(),
+                    user = UserIdPayload(id = userId)
+                )
 
-            // Send the perfectly shaped payload to Spring Boot
-            api.syncChatMessage(networkPayload)
-            Log.d("ChatSync", "Message saved to server!")
-        } catch (e: Exception) {
-            Log.e("ChatSync", "Retrofit crashed because: ", e)
+                api.syncChatMessage(networkPayload)
+                Log.d("ChatSync", "Message saved to PostgreSQL backend server successfully!")
+            } catch (e: Exception) {
+                // Suppress the log entry so local application tracking carries on without visible stutter
+                Log.e("ChatSync", "Network background sync skipped because server is unreachable: ", e)
+            }
         }
     }
 
+    // Private helper to wrap database operations cleanly
+    private suspend fun chatRepositoryContextRun(block: suspend () -> Unit) {
+        withContext(Dispatchers.IO) { block() }
+    }
     override suspend fun clearChatsForToday(dateString: String) {
         chatDao.clearChatsForDate(dateString)
         // TODO: Eventually add a call to api.deleteChatsForDate(userId, dateString)

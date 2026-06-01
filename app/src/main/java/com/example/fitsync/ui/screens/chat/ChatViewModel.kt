@@ -74,7 +74,6 @@ class ChatViewModel @Inject constructor(
     fun sendTextMessage(text: String) {
         if (text.isBlank()) return
 
-        // 3. Save the clean, normal text to the database (This is what the user sees in the UI)
         val userMessage = ChatMessage(
             id = UUID.randomUUID().toString(),
             text = text,
@@ -82,22 +81,28 @@ class ChatViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
+            try {
+                // Instant local layout response
+                chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
 
-            _isTyping.value = true
+                // Turn on shimmer immediately
+                _isTyping.value = true
 
-            // 4. Send the ENRICHED text to Gemini (This is what the AI sees)
-            val enrichedPrompt = buildEnrichedPrompt(text)
-            val result = geminiService.sendChatMessage(enrichedPrompt)
+                val enrichedPrompt = buildEnrichedPrompt(text)
+                val result = geminiService.sendChatMessage(enrichedPrompt)
 
-            result.onSuccess { reply ->
-                saveBotMessage(reply)
+                result.onSuccess { reply ->
+                    saveBotMessage(reply)
+                }
+                result.onFailure {
+                    saveBotMessage("I'm having a little trouble connecting right now. Please try again in a moment! 😅")
+                }
+            } catch (e: Exception) {
+                saveBotMessage("An unexpected glitch occurred. Let's try that request again.")
+            } finally {
+                // 🔥 GUARANTEED FIX: Shimmer turns off even if everything else throws an exception
+                _isTyping.value = false
             }
-            result.onFailure {
-                saveBotMessage("I'm having a little trouble connecting right now. Please try again in a moment! 😅")
-            }
-
-            _isTyping.value = false
         }
     }
 
@@ -105,48 +110,49 @@ class ChatViewModel @Inject constructor(
         val displayMessage = if (userPrompt.isNotBlank()) userPrompt else "Can you analyze this?"
 
         viewModelScope.launch {
-            val savedImagePath = withContext(Dispatchers.IO) {
-                ImageStorageHelper.saveBitmapToCache(context, bitmap)
-            }
-
-            // Save clean message to DB
-            val userMessage = ChatMessage(
-                id = UUID.randomUUID().toString(),
-                text = displayMessage,
-                sentByUser = true,
-                imageLocalPath = savedImagePath
-            )
-
-            chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
-
-            _isTyping.value = true
-
-            // Send ENRICHED prompt to Gemini Vision so it calculates macros based on the user's goals
-            val enrichedPrompt = buildEnrichedPrompt(displayMessage)
-            val result = geminiService.analyzeMealImage(bitmap, enrichedPrompt)
-
-            result.onSuccess { parsedMacros ->
-                if (parsedMacros.isFood) {
-                    val botMessage = ChatMessage(
-                        id = UUID.randomUUID().toString(),
-                        text = parsedMacros.nutritionistReply.ifBlank { "Here is the breakdown of your meal:" },
-                        sentByUser = false,
-                        isAnalysis = true,
-                        mealName = parsedMacros.mealName,
-                        estimatedQuantity = parsedMacros.estimatedQuantity,
-                        macros = parsedMacros
-                    )
-                    chatRepository.insertMessage(botMessage, todayDateString, currentUserId)
-                } else {
-                    saveBotMessage(parsedMacros.nonFoodMessage)
+            try {
+                val savedImagePath = withContext(Dispatchers.IO) {
+                    ImageStorageHelper.saveBitmapToCache(context, bitmap)
                 }
-            }
 
-            result.onFailure { error ->
-                saveBotMessage("Oops! I had trouble seeing that clearly. Make sure the food is well-lit and try again. 😅")
-            }
+                val userMessage = ChatMessage(
+                    id = UUID.randomUUID().toString(),
+                    text = displayMessage,
+                    sentByUser = true,
+                    imageLocalPath = savedImagePath
+                )
 
-            _isTyping.value = false
+                chatRepository.insertMessage(userMessage, todayDateString, currentUserId)
+                _isTyping.value = true
+
+                val enrichedPrompt = buildEnrichedPrompt(displayMessage)
+                val result = geminiService.analyzeMealImage(bitmap, enrichedPrompt)
+
+                result.onSuccess { parsedMacros ->
+                    if (parsedMacros.isFood) {
+                        val botMessage = ChatMessage(
+                            id = UUID.randomUUID().toString(),
+                            text = parsedMacros.nutritionistReply.ifBlank { "Here is the breakdown of your meal:" },
+                            sentByUser = false,
+                            isAnalysis = true,
+                            mealName = parsedMacros.mealName,
+                            estimatedQuantity = parsedMacros.estimatedQuantity,
+                            macros = parsedMacros
+                        )
+                        chatRepository.insertMessage(botMessage, todayDateString, currentUserId)
+                    } else {
+                        saveBotMessage(parsedMacros.nonFoodMessage)
+                    }
+                }
+                result.onFailure {
+                    saveBotMessage("Oops! I had trouble seeing that clearly. Make sure the food is well-lit and try again. 😅")
+                }
+            } catch (e: Exception) {
+                saveBotMessage("Vision extraction failed due to a system pipeline glitch.")
+            } finally {
+                // 🔥 GUARANTEED FIX: Shimmer turns off
+                _isTyping.value = false
+            }
         }
     }
 

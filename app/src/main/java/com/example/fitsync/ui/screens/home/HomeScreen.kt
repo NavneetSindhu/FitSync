@@ -177,16 +177,24 @@ fun HomeScreen(
             )
         }
 
+        // 🔥 LOCATE THIS BLOCK AT THE BOTTOM OF HOMESCREEN.KT
+
         if (showCreateWorkoutSheet) {
             CreateWorkoutBottomSheet(
                 onDismiss = { showCreateWorkoutSheet = false },
                 onStartWorkout = { finalName, isCustom ->
-                    // ── 2. LOGIC SYNC ──
-                    // Update the session name in the ViewModel
+                    // 1. Force the shared DailyLogViewModel to instantiate the active session data properties
+                    viewModel.startWorkoutSession(finalName)
+
+                    // 2. Notify the home tree tracking callback if necessary
                     onStartWorkout(finalName)
+
                     showCreateWorkoutSheet = false
-                    // Swipe the pager to the "Today" logging tab
-                    coroutineScope.launch { pagerState.animateScrollToPage(1) }
+
+                    // 3. Smoothly slide the view to the 'Today' workspace tab under the main TopAppBar
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(1)
+                    }
                 }
             )
         }
@@ -206,27 +214,61 @@ fun WorkoutNameHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp), // Slightly more vertical breathing room
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         if (isEditing) {
-            OutlinedTextField(
+            TextField(
                 value = textValue,
                 onValueChange = { textValue = it },
-                modifier = Modifier.weight(1f),
-                textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp),
+                textStyle = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = accentColor,
-                    unfocusedBorderColor = accentColor.copy(alpha = 0.5f)
+                shape = RoundedCornerShape(24.dp), // Matches your bottom nav and pill row curvature
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    focusedIndicatorColor = Color.Transparent, // Removes old-school accent line
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    cursorColor = accentColor
                 ),
                 trailingIcon = {
-                    IconButton(onClick = {
-                        onNameChange(textValue)
-                        isEditing = false
-                    }) {
-                        Icon(Icons.Default.Check, contentDescription = "Done", tint = accentColor)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        // Dynamic Clear Cross Icon Button
+                        if (textValue.isNotEmpty()) {
+                            IconButton(onClick = { textValue = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Clear text",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        // Done Check Button
+                        IconButton(onClick = {
+                            if (textValue.isNotBlank()) {
+                                onNameChange(textValue.trim())
+                            }
+                            isEditing = false
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Done",
+                                tint = accentColor
+                            )
+                        }
                     }
                 }
             )
@@ -234,7 +276,9 @@ fun WorkoutNameHeader(
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { isEditing = true },
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { isEditing = true }
+                    .padding(vertical = 4.dp, horizontal = 8.dp), // Safe touch targets
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -243,13 +287,20 @@ fun WorkoutNameHeader(
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Spacer(Modifier.width(8.dp))
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "Edit Name",
-                    modifier = Modifier.size(16.dp),
-                    tint = accentColor.copy(alpha = 0.6f)
-                )
+                Spacer(Modifier.width(12.dp))
+
+                Surface(
+                    shape = CircleShape,
+                    color = accentColor.copy(alpha = 0.1f),
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Name",
+                        modifier = Modifier.padding(6.dp),
+                        tint = accentColor
+                    )
+                }
             }
         }
     }
@@ -456,6 +507,7 @@ fun StatsTabContent(userName: String, workoutMap: Map<LocalDate, WorkoutSummary>
                 PRPlaceholderCard(exercise = "Barbell Bench Press", weight = "100 kg", reps = "5 reps")
                 Spacer(Modifier.height(8.dp))
                 PRPlaceholderCard(exercise = "Squat", weight = "140 kg", reps = "3 reps")
+                Spacer(Modifier.height(60.dp))
             }
         }
     }
