@@ -1,0 +1,415 @@
+<resources>
+    <string name="app_name">Maximus</string>
+
+    <!-- Navigation Tabs -->
+    <string name="nav_home">Home</string>
+    <string name="nav_history">History</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_chat">Chat</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common Actions -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_done">Done</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_restore">Restore</string>
+    <string name="action_close">Close</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting_format">Hello, %1$s! 👋</string>
+    <string name="home_overall_progress">Overall Progress</string>
+    <string name="home_total_volume">Total Volume</string>
+    <string name="home_total_sets">Total Sets</string>
+    <string name="home_total_workouts">Total Workouts</string>
+    <string name="home_current_streak">Current Streak</string>
+    <string name="home_streak_days_format">%1$d Days</string>
+    <string name="home_streak_single_day">1 Day</string>
+    <string name="home_streak_none">0 Days</string>
+    <string name="home_consistency_section">Consistency</string>
+    <string name="home_trends_section">Trends &amp; Analytics</string>
+    <string name="home_personal_records_section">Personal Records</string>
+    <string name="home_volume_trend_title">Weekly Volume Trend</string>
+    <string name="home_tab_stats">Stats</string>
+    <string name="home_tab_today">Today</string>
+    <string name="home_start_workout_fab">Start Workout</string>
+    <string name="home_add_exercise_fab">Add Exercise</string>
+    <string name="home_showing_today">Showing: Today</string>
+    <string name="home_showing_date_format">Showing: %1$d %2$s</string>
+    <string name="home_rest_day_title">Rest Day</string>
+    <string name="home_rest_day_desc_format">No workout logged on %1$s %2$d.</string>
+    <string name="home_no_workout_logged">No Workout Logged</string>
+    <string name="home_missed_log_format">Missed logging on %1$d %2$s?</string>
+    <string name="home_log_past_btn">+ Log Past</string>
+    <string name="home_summary_title_format">%1$d %2$s Summary</string>
+    <string name="home_summary_sets_format">%1$d sets logged</string>
+    <string name="home_pr_best_format">Best: %1$d %2$s × %3$d reps</string>
+    <string name="home_log_retroactive">Log Retroactively</string>
+    <string name="home_no_prs_title">No Personal Records Yet</string>
+    <string name="home_no_prs_desc">Complete workouts to automatically track your best lifts and 1RM progression.</string>
+    <string name="home_est_1rm">EST. 1RM</string>
+
+    <!-- Workout Logging -->
+    <string name="log_workout_saved_toast">Workout Saved to History! 💪</string>
+    <string name="log_edit_workout_name">Edit Workout Name</string>
+    <string name="log_finish_workout">Finish Workout</string>
+    <string name="log_add_exercise">Add Exercise</string>
+    <string name="log_set_header">SET</string>
+    <string name="log_type_header">TYPE</string>
+    <string name="log_kg_header">KG</string>
+    <string name="log_lbs_header">LBS</string>
+    <string name="log_reps_header">REPS</string>
+    <string name="log_time_header">TIME (s)</string>
+    <string name="log_add_set">Add Set</string>
+    <string name="log_add_set_success_toast">Added Set %1$d</string>
+    <string name="log_delete_set_toast">Removed Set</string>
+    <string name="log_rest_timer_btn">Rest Timer</string>
+    <string name="log_empty_workout_title">Empty Workout</string>
+    <string name="log_empty_workout_desc">Add exercises to start tracking your sets and reps.</string>
+    <string name="log_finish_dialog_title">Finish Workout?</string>
+    <string name="log_incomplete_dialog_title">Incomplete Sets</string>
+    <string name="log_finish_dialog_message">All %1$d sets completed! Ready to save to your local history?</string>
+    <string name="log_incomplete_dialog_message">You have completed %1$d of %2$d sets. Do you want to finish and save anyway?</string>
+    <string name="log_keep_training_btn">Keep Training</string>
+    <string name="log_save_workout_btn">Save Workout</string>
+    <string name="log_delete_exercise_menu">Delete Exercise</string>
+    <string name="log_plate_calc_desc">Plate Calculator</string>
+    <string name="log_barbell_exercise_tag">Barbell Exercise</string>
+    <string name="log_select_exercise_title">Select Exercise</string>
+    <string name="log_search_exercises_placeholder">Search exercises...</string>
+    <string name="log_no_exercises_found">No exercises found matching your search.</string>
+
+    <!-- Plate Calculator Bottom Sheet -->
+    <string name="plate_calc_title">Barbell Plate Calculator</string>
+    <string name="plate_calc_subtitle">Visual sleeve loading per side</string>
+    <string name="plate_calc_target_label">Target Total Weight</string>
+    <string name="plate_calc_bar_weight_label">Olympic Bar Weight</string>
+    <string name="plate_calc_each_side_header">EACH SIDE (Load in order):</string>
+    <string name="plate_calc_just_bar_message">Just the bar! No extra plates needed.</string>
+    <string name="plate_calc_got_it_btn">Got It!</string>
+
+    <!-- Create Workout Bottom Sheet -->
+    <string name="create_workout_title">Start New Session</string>
+    <string name="create_workout_name_label">Workout Name</string>
+    <string name="create_workout_name_placeholder">e.g. Weekend Blast</string>
+    <string name="create_workout_preset_info_format">You are starting a %1$s session.</string>
+    <string name="create_workout_start_btn">Let\'s Go!</string>
+
+    <!-- Retroactive Log Bottom Sheet -->
+    <string name="retroactive_log_title">Log Past Session</string>
+    <string name="retroactive_log_btn_format">Start Logging for %1$d %2$s</string>
+
+    <!-- History Screen & Bottom Sheets -->
+    <string name="history_title">Workout History</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_empty_title">No Workout History</string>
+    <string name="history_empty_desc">You haven\'t logged any workouts yet. Start your first session from the Home tab!</string>
+    <string name="history_summary_sessions_format">%1$d Sessions</string>
+    <string name="history_summary_volume_format">%1$s %2$s Total Volume</string>
+    <string name="history_delete_title">Delete Workout?</string>
+    <string name="history_delete_desc_format">Are you sure you want to delete this %1$s session? This action cannot be undone.</string>
+    <string name="history_filter_sheet_title">Filter &amp; Sort Workouts</string>
+    <string name="history_filter_reset_all">Reset All</string>
+    <string name="history_filter_sort_by">SORT BY</string>
+    <string name="history_filter_training_split">TRAINING SPLIT</string>
+    <string name="history_filter_month_timeline">MONTH TIMELINE</string>
+    <string name="history_filter_apply_btn">Apply Filters</string>
+    <string name="history_filter_apply_count_format">Apply Filters (%1$d)</string>
+
+    <!-- Backup & Export -->
+    <string name="backup_title">Data Backup &amp; Export</string>
+    <string name="backup_subtitle">Local-First CSV and JSON Persistence</string>
+    <string name="backup_export_csv">Export to CSV</string>
+    <string name="backup_export_csv_desc">Open in Google Sheets, Excel, or Apple Numbers</string>
+    <string name="backup_copy_json">Copy JSON Backup</string>
+    <string name="backup_copy_json_desc">Full structural backup for safe keeping</string>
+    <string name="backup_restore_json">Restore from JSON</string>
+    <string name="backup_restore_json_desc">Import previous backups into local database</string>
+    <string name="backup_restore_dialog_title">Restore Workouts</string>
+    <string name="backup_restore_dialog_message">Paste your JSON backup data below to import your workouts into local storage:</string>
+    <string name="backup_copied_toast">Backup copied to clipboard!</string>
+    <string name="backup_restored_toast">Successfully restored %1$d workouts!</string>
+    <string name="backup_no_valid_json">No valid workouts found in JSON.</string>
+
+    <!-- Exercise Detail Bottom Sheet -->
+    <string name="exercise_analytics_title">Advanced Performance Analytics</string>
+    <string name="exercise_no_logs_period">No logs found for this period</string>
+    <string name="exercise_peak_format">Peak %1$s Recorded</string>
+    <string name="exercise_all_time_peak">ALL-TIME PEAK</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_account_section">Account</string>
+    <string name="profile_personal_details">Personal Details</string>
+    <string name="profile_personal_details_subtitle">Age, weight, height &amp; goal</string>
+    <string name="profile_fitness_goal">Fitness Goal</string>
+    <string name="profile_preferences_section">Preferences</string>
+    <string name="profile_workout_reminders">Workout Reminders</string>
+    <string name="profile_workout_reminders_subtitle">Daily push notifications</string>
+    <string name="profile_rest_timer">Rest Timer</string>
+    <string name="profile_rest_timer_subtitle">Auto-start after each set</string>
+    <string name="profile_weight_unit">Weight Unit</string>
+    <string name="profile_weight_unit_subtitle">Used across the app</string>
+    <string name="profile_data_section">Data</string>
+    <string name="profile_cloud_sync">Cloud Sync</string>
+    <string name="profile_cloud_sync_offline_mode">Local-First (Offline storage active)</string>
+    <string name="profile_app_settings">App Settings</string>
+    <string name="profile_app_settings_subtitle">Theme, styling and display</string>
+    <string name="profile_logout">Log Out</string>
+    <string name="profile_achievements_title">Achievements</string>
+    <string name="profile_gender_label">Gender</string>
+    <string name="profile_age_label">Age</string>
+    <string name="profile_weight_label">Weight</string>
+    <string name="profile_height_label">Height</string>
+    <string name="profile_bmi_label">BMI</string>
+    <string name="profile_save_details">Save Details</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance_section">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_dark_mode_active">Dark theme active</string>
+    <string name="settings_light_mode_active">Light theme active</string>
+    <string name="settings_accent_color">Accent Color</string>
+    <string name="settings_nav_style">Navigation Style</string>
+    <string name="settings_nav_style_subtitle">How you move between screens</string>
+    <string name="settings_font_scale">Font Size Scale</string>
+    <string name="settings_compact_cards">Compact Cards</string>
+    <string name="settings_compact_cards_subtitle">Reduce vertical card height in lists</string>
+    <string name="settings_units_section">Units &amp; Measurements</string>
+    <string name="settings_weight_unit">Weight Unit</string>
+    <string name="settings_unit_kg_desc">Kilograms (kg)</string>
+    <string name="settings_unit_lbs_desc">Pounds (lbs)</string>
+    <string name="settings_workout_prefs_section">Workout &amp; Logging</string>
+    <string name="settings_default_barbell">Default Barbell Weight</string>
+    <string name="settings_barbell_weight_format">%1$d %2$s (Olympic standard)</string>
+    <string name="settings_auto_rest_timer">Auto-Start Rest Timer</string>
+    <string name="settings_auto_rest_subtitle">Begin countdown immediately after checking a set</string>
+    <string name="settings_default_rest_duration">Default Rest Duration</string>
+    <string name="settings_rest_duration_format">%1$dm %2$ds between sets</string>
+    <string name="settings_track_warmups">Include Warm-ups in Volume</string>
+    <string name="settings_track_warmups_subtitle">Count warm-up sets toward total session volume</string>
+    <string name="settings_app_experience_section">App Experience</string>
+    <string name="settings_first_day_week">First Day of Week</string>
+    <string name="settings_first_day_week_subtitle">For heatmaps &amp; weekly training calendars</string>
+    <string name="settings_haptic_feedback">Haptic Feedback</string>
+    <string name="settings_haptic_subtitle">Vibrate on button taps, set completions, and timer events</string>
+    <string name="settings_notifications_section">Notifications &amp; Reminders</string>
+    <string name="settings_daily_reminders">Daily Workout Reminders</string>
+    <string name="settings_daily_reminders_subtitle">Receive motivation and daily training schedule alerts</string>
+    <string name="settings_reminder_time">Reminder Time</string>
+    <string name="settings_data_storage_section">Data &amp; Export</string>
+    <string name="settings_export_csv">Export Workout Data (CSV)</string>
+    <string name="settings_export_csv_subtitle">Export spreadsheet file of all logged workouts and sets</string>
+    <string name="settings_danger_zone">Danger Zone</string>
+    <string name="settings_reset_data">Erase All App Data</string>
+    <string name="settings_reset_data_subtitle">Permanently clear workouts, PRs, and custom routines</string>
+    <string name="settings_reset_dialog_title">Erase All App Data?</string>
+    <string name="settings_reset_dialog_desc">This will permanently delete all workout history, personal records, and custom routines. This action cannot be undone.</string>
+    <string name="settings_reset_dialog_confirm">Erase Everything</string>
+    <string name="settings_debug_section">Developer &amp; Debug</string>
+    <string name="settings_debug_prefill_workouts">Pre-fill Sample Workouts</string>
+    <string name="settings_debug_prefill_subtitle">Insert 3 sample workouts (Push, Pull, Legs) to test analytics</string>
+    <string name="settings_debug_shimmer">Shimmer Skeleton Previews</string>
+    <string name="settings_debug_shimmer_subtitle">Simulate database load delays across all 4 screens</string>
+    <string name="settings_debug_replay_onboarding">Replay Interactive Onboarding</string>
+    <string name="settings_debug_replay_onboarding_subtitle">Reset first-run flag and start onboarding setup flow</string>
+    <string name="settings_debug_reset_onboarding">Reset to Onboarding</string>
+    <string name="settings_debug_reset_onboarding_subtitle">Clear first-run flag to preview onboarding tour</string>
+
+    <!-- Chat Screen -->
+    <string name="chat_title">Maximus AI Coach</string>
+    <string name="chat_subtitle">Today\'s Nutrition &amp; Fitness Advisor</string>
+    <string name="chat_input_placeholder">Ask Maximus AI anything...</string>
+    <string name="chat_clear_dialog_title">Clear Chat</string>
+    <string name="chat_clear_dialog_message">Clear conversation history for today?</string>
+    <string name="chat_athlete_default">Athlete</string>
+    <string name="chat_banner_tagline">Welcome, %1$s! Let\'s crush your training &amp; nutrition goals.</string>
+    <string name="chat_message_copied">Message copied to clipboard</string>
+    <string name="chat_action_copy">Copy text</string>
+    <string name="chat_action_edit">Edit prompt</string>
+    <string name="chat_action_delete">Delete</string>
+
+    <!-- BMI Labels -->
+    <string name="bmi_underweight">Underweight</string>
+    <string name="bmi_normal">Normal</string>
+    <string name="bmi_overweight">Overweight</string>
+    <string name="bmi_obese">Obese</string>
+
+    <!-- Units -->
+    <string name="unit_kg">kg</string>
+    <string name="unit_lbs">lbs</string>
+    <string name="unit_cm">cm</string>
+    <string name="unit_yrs">yrs</string>
+    <string name="unit_reps">reps</string>
+    <string name="unit_secs">secs</string>
+
+    <!-- Onboarding Setup Flow -->
+    <string name="onboarding_step_progress">Step %1$d of %2$d</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_finish">Enter Maximus</string>
+    <string name="onboarding_step1_title">Welcome to Maximus! ⚡</string>
+    <string name="onboarding_step1_desc">Let\'s personalize your training dashboard and progression tracking.</string>
+    <string name="onboarding_step1_name_label">WHAT SHOULD WE CALL YOU?</string>
+    <string name="onboarding_step1_name_placeholder">e.g. Alex Hunter</string>
+    <string name="onboarding_step1_gender_label">GENDER IDENTITY</string>
+    <string name="onboarding_gender_male">Male</string>
+    <string name="onboarding_gender_female">Female</string>
+    <string name="onboarding_gender_athlete">Athlete</string>
+    <string name="onboarding_step2_title">Your Baseline Stats</string>
+    <string name="onboarding_step2_desc">Used to accurately compute 1RM estimates, volume formulas, and BMI.</string>
+    <string name="onboarding_step2_age_label">AGE</string>
+    <string name="onboarding_years_old">years old</string>
+    <string name="onboarding_step2_weight_label">BODY WEIGHT</string>
+    <string name="onboarding_step2_height_label">HEIGHT (CM)</string>
+    <string name="onboarding_step3_title">Primary Training Goal</string>
+    <string name="onboarding_step3_desc">Tailors your analytics, volume progression, and benchmark highlights.</string>
+    <string name="onboarding_goal_muscle_title">Build Muscle</string>
+    <string name="onboarding_goal_muscle_desc">Hypertrophy, volume &amp; progressive overload</string>
+    <string name="onboarding_goal_strength_title">Increase Strength</string>
+    <string name="onboarding_goal_strength_desc">Peak 1RM on compound barbell lifts</string>
+    <string name="onboarding_goal_calisthenics_title">Calisthenics Skills</string>
+    <string name="onboarding_goal_calisthenics_desc">Master lever, handstand &amp; weighted pulls</string>
+    <string name="onboarding_goal_fat_loss_title">Fat Loss &amp; Tone</string>
+    <string name="onboarding_goal_fat_loss_desc">High-density conditioning &amp; fat burn</string>
+    <string name="onboarding_goal_health_title">Health &amp; Longevity</string>
+    <string name="onboarding_goal_health_desc">Functional mobility, posture &amp; wellness</string>
+    <string name="onboarding_step4_title">Choose Your Tone</string>
+    <string name="onboarding_step4_desc">Select your signature gym accent color. You can change this anytime in Settings.</string>
+    <string name="onboarding_step4_palette_label">SIGNATURE ACCENT PALETTE</string>
+    <string name="onboarding_greeting_preview">Hello, %1$s! 👋</string>
+    <string name="onboarding_badge_ready">READY</string>
+
+    <!-- Routines & Planning Navigation -->
+    <string name="nav_routines">Routines</string>
+    <string name="routines_title">Workout Routines</string>
+    <string name="routines_subtitle">Blueprints, Split Schedules &amp; Templates</string>
+    <string name="routines_tab_my_routines">My Routines</string>
+    <string name="routines_tab_split_planner">Weekly Plan</string>
+    <string name="routines_tab_explore">Templates</string>
+    <string name="routines_create_new">New Routine</string>
+    <string name="routines_empty_title">No Custom Routines</string>
+    <string name="routines_empty_desc">Create your first training template or choose a popular split preset below!</string>
+    <string name="routines_start_routine_btn">Start Routine</string>
+    <string name="routines_edit_routine_btn">Edit Blueprint</string>
+    <string name="routines_delete_dialog_title">Delete Routine?</string>
+    <string name="routines_delete_dialog_msg">Are you sure you want to delete \"%1$s\"? Past workout history will not be affected.</string>
+    <string name="routines_duplicate_btn">Duplicate</string>
+
+    <!-- Weekly Plan & Split Engine -->
+    <string name="split_current_active">ACTIVE TRAINING SPLIT</string>
+    <string name="split_presets_title">Choose Split Preset</string>
+    <string name="split_custom_schedule_title">Weekly Schedule</string>
+    <string name="split_ppl_title">Push / Pull / Legs (PPL)</string>
+    <string name="split_ppl_desc">6-day or 3-day classic hypertrophy &amp; power split</string>
+    <string name="split_upper_lower_title">Upper / Lower (4-Day)</string>
+    <string name="split_upper_lower_desc">Optimal frequency &amp; recovery balance</string>
+    <string name="split_full_body_title">Full Body (3-Day)</string>
+    <string name="split_full_body_desc">Mon / Wed / Fri compound strength builder</string>
+    <string name="split_arnold_title">Arnold Split</string>
+    <string name="split_arnold_desc">Chest/Back, Shoulders/Arms, Legs split</string>
+    <string name="split_rest_day">Rest &amp; Recovery</string>
+    <string name="split_assign_day">Assign Routine to %1$s</string>
+    <string name="split_set_rest">Set as Rest Day</string>
+    <string name="split_apply_preset_toast">Applied %1$s split schedule!</string>
+
+    <!-- Home Today Session Hero Card -->
+    <string name="home_today_session_title">TODAY\'S WORKOUT</string>
+    <string name="home_start_today_workout">Start Workout</string>
+    <string name="home_empty_workout_btn">Empty Workout</string>
+    <string name="home_empty_workout_subtitle">Freestyle ad-hoc session</string>
+    <string name="home_rest_today_hero_title">Rest &amp; Recovery Day 🌿</string>
+    <string name="home_rest_today_hero_subtitle">Your muscles grow when resting. Ready score: %1$d%%</string>
+    <string name="home_start_unscheduled_btn">Start Freestyle Workout</string>
+    <string name="home_skipped_yesterday_alert">Missed %1$s on %2$s?</string>
+    <string name="home_make_up_workout_btn">Make Up Workout</string>
+    <string name="home_week_overview">THIS WEEK</string>
+    <string name="home_planned_movements_format">PLANNED MOVEMENTS (%1$d)</string>
+    <string name="home_show_less">Show less</string>
+    <string name="home_more_exercises_format">+%1$d more</string>
+
+    <!-- Skip Workout Actions & Sheet -->
+    <string name="skip_workout_btn">Skip</string>
+    <string name="skip_dialog_title">Skip Today\'s Session?</string>
+    <string name="skip_dialog_subtitle">Choose how to adjust your schedule without losing momentum.</string>
+    <string name="skip_option_rest_title">Mark Today as Rest Day 🌿</string>
+    <string name="skip_option_rest_desc">Take a recovery day. Your streak and future split stay intact.</string>
+    <string name="skip_option_shift_title">Shift Split Forward (+1 Day) ⏩</string>
+    <string name="skip_option_shift_desc">Push \"%1$s\" to tomorrow and shift upcoming workouts forward.</string>
+    <string name="skip_option_dismiss_title">Skip &amp; Catch Up Later</string>
+    <string name="skip_option_dismiss_desc">Maximus will provide a 1-tap make up reminder later this week.</string>
+    <string name="skip_toast_marked_rest">Marked today as a Rest Day.</string>
+    <string name="skip_toast_shifted">Shifted schedule forward by 1 day.</string>
+    <string name="skip_dismiss_alert_btn">Dismiss</string>
+
+    <!-- Routine Builder -->
+    <string name="builder_create_title">Create Routine</string>
+    <string name="builder_edit_title">Edit Routine</string>
+    <string name="builder_name_label">ROUTINE NAME</string>
+    <string name="builder_name_placeholder">e.g. Heavy Push (Chest &amp; Triceps)</string>
+    <string name="builder_target_muscles">TARGET MUSCLES</string>
+    <string name="builder_exercises_section">EXERCISES (%1$d)</string>
+    <string name="builder_add_exercise_btn">Add Exercise</string>
+    <string name="builder_save_routine_btn">Save Routine Blueprint</string>
+    <string name="builder_target_sets_format">%1$d Sets</string>
+    <string name="builder_target_reps_format">%1$s Reps</string>
+    <string name="builder_default_weight_format">%1$s %2$s</string>
+    <string name="builder_rest_format">%1$ds Rest</string>
+
+    <!-- Exercise Library & Custom Exercise -->
+    <string name="library_title">Exercise Library</string>
+    <string name="library_search_placeholder">Search 120+ exercises...</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_chest">Chest</string>
+    <string name="library_filter_back">Back</string>
+    <string name="library_filter_legs">Legs</string>
+    <string name="library_filter_shoulders">Shoulders</string>
+    <string name="library_filter_arms">Arms</string>
+    <string name="library_filter_core">Core</string>
+    <string name="library_add_custom">Custom Movement</string>
+    <string name="library_create_custom_title">New Custom Exercise</string>
+    <string name="library_custom_name_label">EXERCISE NAME</string>
+    <string name="library_custom_name_placeholder">e.g. Incline Smith Press</string>
+    <string name="library_primary_muscle_label">PRIMARY MUSCLE</string>
+    <string name="library_equipment_label">EQUIPMENT TYPE</string>
+    <string name="library_save_custom_btn">Save to Library</string>
+
+    <!-- Active Workout Floating Mini Bar -->
+    <string name="active_workout_mini_title">Workout in Progress</string>
+    <string name="active_workout_resume">Resume</string>
+    <string name="active_workout_discard">Discard</string>
+    <string name="active_workout_discard_dialog_title">Discard Live Workout?</string>
+    <string name="active_workout_discard_dialog_msg">Your active session progress and entered sets will be lost.</string>
+
+    <!-- Stats & Analytics Screen -->
+    <string name="stats_title">Training Analytics</string>
+    <string name="stats_subtitle">Volume, Overload &amp; Consistency</string>
+    <string name="stats_tab_overview">Overview</string>
+    <string name="stats_tab_overload">Progressive Overload</string>
+    <string name="stats_tab_anatomy">3D Silhouette</string>
+    <string name="stats_tab_calendar">Calendar Heatmap</string>
+    <string name="stats_progressive_overload_title">Progressive Overload Tracker</string>
+    <string name="stats_progressive_overload_desc">Track estimated 1RM growth and strength trajectory per exercise.</string>
+    <string name="stats_select_exercise">Select Lift</string>
+    <string name="stats_gain_badge_format">+%1$.1f%% Strength Gain</string>
+    <string name="stats_1rm_progression_chart_title">1RM Strength Trajectory</string>
+    <string name="stats_no_progression_data">Log multiple sessions for this lift to view your progressive overload curve.</string>
+
+    <!-- Streak Freeze Engine -->
+    <string name="streak_freeze_title">Streak Freeze Vault</string>
+    <string name="streak_freeze_available_count">%1$d/%2$d Freezes Available</string>
+    <string name="streak_freeze_active_pill">%1$d Freeze Active</string>
+    <string name="streak_freeze_desc">Streak Freezes automatically protect your hard-earned streak if you miss a scheduled workout day.</string>
+    <string name="streak_freeze_how_to_earn">Earn +1 Freeze every 7 days of unbroken training (max %1$d).</string>
+    <string name="streak_freeze_auto_protected_day">Protected by Streak Freeze</string>
+    <string name="streak_freeze_used_toast">Streak Freeze consumed to protect your momentum!</string>
+
+    <!-- Profile App Links -->
+    <string name="profile_rate_us_title">Rate Us</string>
+    <string name="profile_rate_us_subtitle">Support on Play Store</string>
+    <string name="profile_more_apps_title">Other Apps</string>
+    <string name="profile_more_apps_subtitle">Minimize Studios</string>
+</resources>

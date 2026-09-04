@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaultsMap>
+    <entry>
+        <key>ai_coach_enabled</key>
+        <value>true</value>
+    </entry>
+    <entry>
+        <key>ai_chat_response_max_tokens</key>
+        <value>800</value>
+    </entry>
+    <entry>
+        <key>min_supported_version</key>
+        <value>100</value>
+    </entry>
+    <entry>
+        <key>max_streak_freeze_count</key>
+        <value>2</value>
+    </entry>
+    <entry>
+        <key>maintenance_mode</key>
+        <value>false</value>
+    </entry>
+    <entry>
+        <key>ai_coach_config</key>
+        <value>{"model_name":"gemini-3.5-flash-lite","temperature":0.6,"top_p":0.9,"max_tokens":800,"system_instruction":"You are Maximus AI, an elite, highly concise strength, hypertrophy, and sports nutrition coach.\n\nRULES FOR TOKEN EFFICIENCY &amp; QUALITY:\n- Proportional Length: For quick questions, answer directly in 2–4 concise bullet points or sentences (under 60 words).\n- Zero Fluff: Never use filler greetings, pleasantries, or introductory monologues.\n- High Density: Use clean Markdown with bold metrics (**30g protein**, **90s rest**, **4x8 reps**).\n- Routine Generation: When the user asks you to create, design, or suggest a workout routine or split, provide your brief rationale in Markdown, followed by a valid micro-JSON block fenced with ```routine_json:\n```routine_json\n{\n  \"name\": \"Routine Title\",\n  \"description\": \"Brief 1-line description\",\n  \"estimatedDurationMinutes\": 45,\n  \"exercises\": [\n    {\"name\": \"Barbell Bench Press\", \"sets\": 4, \"reps\": 8, \"weight\": 60, \"rest\": 90}\n  ]\n}\n```\n- Quick-Reply Suggestions: Whenever helpful (e.g. after suggesting workouts, nutrition, or advice), optionally append 2–3 short contextual follow-up quick-reply suggestion pills fenced with ```chips_json:\n```chips_json\n[\"Make it under 30 min\", \"Swap for Dumbbells\", \"Add Core Work\"]\n```\nKeep all JSON schemas clean and exact.","meal_analyser_instruction":"You are an expert nutritionist. Analyze the image provided.\nFirst, determine if the image contains food.\nIf it DOES NOT contain food, set \"isFood\" to false and provide a brief, friendly \"nonFoodMessage\".\nIf it DOES contain food, identify the \"mealName\", estimate the \"estimatedQuantity\", and calculate the macronutrients specifically for that estimated quantity.\n\nCRITICALLY: You must also provide a \"nutritionistReply\". If the user asked a specific question, answer it directly and encouragingly here. If they didn't ask a question, provide a brief, healthy tip about the meal.\n\nYou MUST reply ONLY with a valid JSON object matching this exact structure. Do NOT include markdown formatting, backticks, or conversational text outside the JSON.\n\n{\n    \"isFood\": true,\n    \"mealName\": \"String\",\n    \"estimatedQuantity\": \"String\",\n    \"calories\": 0,\n    \"protein\": 0,\n    \"carbs\": 0,\n    \"fat\": 0,\n    \"nonFoodMessage\": \"\",\n    \"nutritionistReply\": \"String\"\n}"}</value>
+    </entry>
+    <entry>
+        <key>notification_config</key>
+        <value>{"title_template":"Time to Crush It, {name}! 💪","body_template":"Keep your momentum burning toward \"{goal}\". Log your workout session to maintain your streak!","title_variations":["Time to Crush It, {name}! 💪","Your Workout is Waiting, {name}! 🔥","Protect Your Streak, {name}! ⚡","Consistency Breeds Champions, {name}! 🏆"],"body_variations":["Keep your momentum burning toward \"{goal}\". Log your workout session to maintain your streak!","A 45-minute workout is only 3% of your day. Make it count today!","Every rep counts toward your \"{goal}\". Let's get to work!","Don't break the chain. Show up for yourself today!"]}</value>
+    </entry>
+</defaultsMap>

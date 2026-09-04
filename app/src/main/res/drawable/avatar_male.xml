@@ -1,0 +1,68 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- Background Circle with Rich Linear Gradient -->
+    <path android:pathData="M50,0A50,50 0 1,0 50,100A50,50 0 1,0 50,0Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="100"
+                android:endY="100"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#2563EB" />
+                <item android:offset="1.0" android:color="#0F172A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Athletic Gym Tank Top Body -->
+    <path
+        android:pathData="M18,96 C20,76 30,70 50,70 C70,70 80,76 82,96 L82,100 L18,100 Z"
+        android:fillColor="#1E293B" />
+
+    <!-- Tank Top Neck Cutout -->
+    <path
+        android:pathData="M38,70 C42,82 58,82 62,70 Z"
+        android:fillColor="#FBBF24" />
+
+    <!-- Neck -->
+    <path
+        android:pathData="M43,56 L57,56 L57,72 L43,72 Z"
+        android:fillColor="#FCD34D" />
+
+    <!-- Head / Face -->
+    <path
+        android:pathData="M35,38 C35,24 65,24 65,38 C65,54 57,62 50,62 C43,62 35,54 35,38 Z"
+        android:fillColor="#FED7AA" />
+
+    <!-- Ears -->
+    <path android:pathData="M33,42 A3,4 0 1,0 33,50 A3,4 0 1,0 33,42 Z" android:fillColor="#FCD34D" />
+    <path android:pathData="M67,42 A3,4 0 1,0 67,50 A3,4 0 1,0 67,42 Z" android:fillColor="#FCD34D" />
+
+    <!-- Eyes -->
+    <path android:pathData="M42,44 A2,2 0 1,0 42,48 A2,2 0 1,0 42,44 Z" android:fillColor="#0F172A" />
+    <path android:pathData="M58,44 A2,2 0 1,0 58,48 A2,2 0 1,0 58,44 Z" android:fillColor="#0F172A" />
+
+    <!-- Confident Athletic Grin -->
+    <path android:pathData="M45,54 C48,58 52,58 55,54" android:strokeColor="#78350F" android:strokeWidth="2" android:strokeLineCap="round" />
+
+    <!-- Athletic Hair -->
+    <path
+        android:pathData="M32,32 C34,16 66,16 68,32 C64,26 58,24 50,24 C42,24 36,26 32,32 Z"
+        android:fillColor="#1E293B" />
+
+    <!-- Sweatband / Athletic Headband -->
+    <path
+        android:pathData="M33,32 C44,28 56,28 67,32 L67,37 C56,33 44,33 33,37 Z"
+        android:fillColor="#38BDF8" />
+
+    <!-- Headband Lightning Accent -->
+    <path
+        android:pathData="M48,31 L51,35 L49,35 L52,38 L47,35 L49,35 Z"
+        android:fillColor="#FBBF24" />
+</vector>

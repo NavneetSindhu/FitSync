@@ -1,0 +1,68 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- Background Circle with Pink/Rose Linear Gradient -->
+    <path android:pathData="M50,0A50,50 0 1,0 50,100A50,50 0 1,0 50,0Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="100"
+                android:endY="100"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#EC4899" />
+                <item android:offset="1.0" android:color="#4C0519" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Athletic Power Top -->
+    <path
+        android:pathData="M20,96 C22,76 32,70 50,70 C68,70 78,76 80,96 L80,100 L20,100 Z"
+        android:fillColor="#BE123C" />
+
+    <!-- Contrast Inner Collar / Sports Bra Cut -->
+    <path
+        android:pathData="M40,70 L50,82 L60,70 Z"
+        android:fillColor="#F472B6" />
+
+    <!-- Neck -->
+    <path
+        android:pathData="M44,56 L56,56 L56,72 L44,72 Z"
+        android:fillColor="#FCD34D" />
+
+    <!-- High Ponytail Hair Behind Head -->
+    <path
+        android:pathData="M56,16 C68,14 78,24 74,38 C72,46 64,52 58,50 C62,40 64,30 56,22 Z"
+        android:fillColor="#451A03" />
+
+    <!-- Head / Face -->
+    <path
+        android:pathData="M35,38 C35,24 65,24 65,38 C65,54 57,62 50,62 C43,62 35,54 35,38 Z"
+        android:fillColor="#FED7AA" />
+
+    <!-- Cheerful Athletic Blush -->
+    <path android:pathData="M38,48 A3,1.5 0 1,0 44,48 A3,1.5 0 1,0 38,48 Z" android:fillColor="#FB7185" />
+    <path android:pathData="M56,48 A3,1.5 0 1,0 62,48 A3,1.5 0 1,0 56,48 Z" android:fillColor="#FB7185" />
+
+    <!-- Eyes -->
+    <path android:pathData="M42,43 A2,2 0 1,0 42,47 A2,2 0 1,0 42,43 Z" android:fillColor="#1E293B" />
+    <path android:pathData="M58,43 A2,2 0 1,0 58,47 A2,2 0 1,0 58,43 Z" android:fillColor="#1E293B" />
+
+    <!-- Smile -->
+    <path android:pathData="M46,54 C48,58 52,58 54,54" android:strokeColor="#BE123C" android:strokeWidth="1.8" android:strokeLineCap="round" />
+
+    <!-- Front Athletic Hair & Fringe -->
+    <path
+        android:pathData="M32,34 C34,18 64,18 66,32 C58,26 52,25 44,27 C38,28 34,31 32,34 Z"
+        android:fillColor="#451A03" />
+
+    <!-- Sporty Pink Hairband / Scrunchie -->
+    <path
+        android:pathData="M54,16 A4,4 0 1,0 62,16 A4,4 0 1,0 54,16 Z"
+        android:fillColor="#F43F5E" />
+</vector>
